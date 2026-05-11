@@ -9,13 +9,24 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+_replit_dev_domain = os.environ.get('REPLIT_DEV_DOMAIN', '')
+
 CSRF_TRUSTED_ORIGINS = [
     'https://*.replit.dev',
+    'https://*.replit.dev:8000',
     'https://*.repl.co',
+    'https://*.repl.co:8000',
     'https://*.kirk.replit.dev',
+    'https://*.kirk.replit.dev:8000',
     'http://localhost:8000',
     'http://0.0.0.0:8000',
 ]
+
+if _replit_dev_domain:
+    CSRF_TRUSTED_ORIGINS += [
+        f'https://{_replit_dev_domain}',
+        f'https://{_replit_dev_domain}:8000',
+    ]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -36,7 +47,7 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
+    'accounts.middleware.ReplicatedCsrfMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'accounts.middleware.ActionLogMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
