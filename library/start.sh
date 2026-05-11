@@ -45,6 +45,6 @@ for title, author, desc, cat_name, copies in books_data:
         print(f'Livro criado: {title}')
 "
 
-echo "=== Iniciando servidor na porta 8000 ==="
-PORT=${PORT:-8000}
+echo "=== Iniciando servidor na porta 5000 ==="
+PORT=${PORT:-5000}
 exec python manage.py runserver 0.0.0.0:$PORT
