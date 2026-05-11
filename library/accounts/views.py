@@ -4,7 +4,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
-from django.views.decorators.http import require_http_methods
+from django.http import JsonResponse
 from .forms import RegisterForm, UserProfileForm
 from .models import ActionLog, UserProfile
 
@@ -40,11 +40,33 @@ def register_view(request):
     form = RegisterForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         user = form.save()
-        ActionLog.log(user=user, action='REGISTER',
-                      description=f'Novo usuário registrado: {user.username} ({user.email})',
-                      request=request,
-                      extra_data={'username': user.username, 'email': user.email,
-                                  'first_name': user.first_name, 'last_name': user.last_name})
+
+        # Salva os dados de localização no perfil
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+        profile.phone       = form.cleaned_data.get('phone', '')
+        profile.cep         = form.cleaned_data.get('cep', '')
+        profile.logradouro  = form.cleaned_data.get('logradouro', '')
+        profile.numero      = form.cleaned_data.get('numero', '')
+        profile.complemento = form.cleaned_data.get('complemento', '')
+        profile.bairro      = form.cleaned_data.get('bairro', '')
+        profile.cidade      = form.cleaned_data.get('cidade', '')
+        profile.estado      = form.cleaned_data.get('estado', '')
+        profile.save()
+
+        ActionLog.log(
+            user=user,
+            action='REGISTER',
+            description=f'Novo usuário registrado: {user.username} ({user.email})',
+            request=request,
+            extra_data={
+                'username':   user.username,
+                'email':      user.email,
+                'first_name': user.first_name,
+                'last_name':  user.last_name,
+                'cidade':     profile.cidade,
+                'estado':     profile.estado,
+            },
+        )
         login(request, user)
         messages.success(request, 'Conta criada com sucesso! Bem-vindo(a)!')
         return redirect('books:list')
@@ -58,8 +80,8 @@ def profile_view(request):
         form = UserProfileForm(request.POST, instance=profile, user=request.user)
         if form.is_valid():
             request.user.first_name = form.cleaned_data.get('first_name', '')
-            request.user.last_name = form.cleaned_data.get('last_name', '')
-            request.user.email = form.cleaned_data.get('email', '')
+            request.user.last_name  = form.cleaned_data.get('last_name', '')
+            request.user.email      = form.cleaned_data.get('email', '')
             request.user.save()
             form.save()
             ActionLog.log(user=request.user, action='PROFILE_UPDATE',
@@ -67,34 +89,44 @@ def profile_view(request):
                           request=request)
             messages.success(request, 'Perfil atualizado com sucesso!')
             return redirect('accounts:profile')
+        else:
+            messages.error(request, 'Corrija os erros abaixo antes de salvar.')
     else:
         form = UserProfileForm(instance=profile, user=request.user)
     return render(request, 'accounts/profile.html', {'form': form, 'profile': profile})
 
 
+def lookup_cep_public(request):
+    """Endpoint público de consulta de CEP — usado no cadastro (sem autenticação)."""
+    return _do_cep_lookup(request)
+
+
 @login_required
 def lookup_cep(request):
+    """Endpoint de consulta de CEP — usado no perfil (requer autenticação)."""
+    return _do_cep_lookup(request)
+
+
+def _do_cep_lookup(request):
     cep = request.GET.get('cep', '').replace('-', '').replace('.', '').strip()
     if len(cep) != 8:
-        from django.http import JsonResponse
-        return JsonResponse({'error': 'CEP inválido'}, status=400)
+        return JsonResponse({'error': 'CEP inválido. Informe 8 dígitos.'}, status=400)
     try:
-        resp = http_requests.get(f'https://viacep.com.br/ws/{cep}/json/', timeout=5)
+        resp = http_requests.get(
+            f'https://viacep.com.br/ws/{cep}/json/', timeout=5
+        )
         data = resp.json()
         if 'erro' in data:
-            from django.http import JsonResponse
-            return JsonResponse({'error': 'CEP não encontrado'}, status=404)
-        from django.http import JsonResponse
+            return JsonResponse({'error': 'CEP não encontrado.'}, status=404)
         return JsonResponse({
-            'logradouro': data.get('logradouro', ''),
-            'bairro': data.get('bairro', ''),
-            'cidade': data.get('localidade', ''),
-            'estado': data.get('uf', ''),
+            'logradouro':  data.get('logradouro', ''),
+            'bairro':      data.get('bairro', ''),
+            'cidade':      data.get('localidade', ''),
+            'estado':      data.get('uf', ''),
             'complemento': data.get('complemento', ''),
         })
     except Exception:
-        from django.http import JsonResponse
-        return JsonResponse({'error': 'Erro ao consultar CEP'}, status=500)
+        return JsonResponse({'error': 'Erro ao consultar o ViaCEP. Tente novamente.'}, status=500)
 
 
 @login_required
