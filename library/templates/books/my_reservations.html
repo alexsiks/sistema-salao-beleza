@@ -67,6 +67,10 @@
           </div>
 
           {% if res.status == 'PENDING' %}
+          <div class="alert alert-warning py-2 px-3 mt-2 mb-0 small">
+            <i class="bi bi-hourglass-split me-1"></i>
+            Aguardando aprovação do administrador.
+          </div>
           <form method="post" action="{% url 'books:cancel_reservation' res.pk %}" class="mt-2">
             {% csrf_token %}
             <button type="submit" class="btn btn-outline-danger btn-sm"
@@ -74,6 +78,11 @@
               <i class="bi bi-x me-1"></i>Cancelar Solicitação
             </button>
           </form>
+          {% endif %}
+          {% if res.status == 'CANCELLED' and res.notes %}
+          <div class="alert alert-danger py-2 px-3 mt-2 mb-0 small">
+            <i class="bi bi-info-circle me-1"></i>{{ res.notes }}
+          </div>
           {% endif %}
         </div>
       </div>

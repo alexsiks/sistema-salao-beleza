@@ -141,9 +141,30 @@ def confirm_loan(request, pk):
     if request.method == 'POST':
         reservation.confirm_loan()
         ActionLog.log(user=request.user, action='BOOK_RESERVE',
-                      description=f'Empréstimo confirmado: {reservation.book.title} para {reservation.user.username}',
+                      description=f'Solicitação aprovada: {reservation.book.title} para {reservation.user.username}',
                       request=request)
-        messages.success(request, f'Empréstimo confirmado! Devolução prevista: {reservation.due_date.strftime("%d/%m/%Y")}')
+        messages.success(request, f'Solicitação aprovada! Devolução prevista: {reservation.due_date.strftime("%d/%m/%Y")}')
+    return redirect('books:all_reservations')
+
+
+@login_required
+def reject_reservation(request, pk):
+    if not request.user.is_staff:
+        messages.error(request, 'Acesso não autorizado.')
+        return redirect('books:list')
+    reservation = get_object_or_404(Reservation, pk=pk, status='PENDING')
+    if request.method == 'POST':
+        reason = request.POST.get('reason', '').strip()
+        reservation.status = 'CANCELLED'
+        if reason:
+            reservation.notes = f'Rejeitado: {reason}'
+        reservation.save()
+        reservation.book.available_copies += 1
+        reservation.book.save()
+        ActionLog.log(user=request.user, action='RESERVATION_CANCEL',
+                      description=f'Solicitação rejeitada: {reservation.book.title} ({reservation.user.username})',
+                      request=request)
+        messages.warning(request, f'Solicitação de "{reservation.book.title}" rejeitada. O exemplar foi devolvido ao estoque.')
     return redirect('books:all_reservations')
 
 

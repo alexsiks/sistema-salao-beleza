@@ -128,6 +128,24 @@ class ConfirmLoanAPIView(APIView):
         })
 
 
+class RejectReservationAPIView(APIView):
+    permission_classes = [permissions.IsAdminUser]
+
+    def post(self, request, pk):
+        reservation = get_object_or_404(Reservation, pk=pk, status='PENDING')
+        reason = request.data.get('reason', '').strip()
+        reservation.status = 'CANCELLED'
+        if reason:
+            reservation.notes = f'Rejeitado: {reason}'
+        reservation.save()
+        reservation.book.available_copies += 1
+        reservation.book.save()
+        ActionLog.log(user=request.user, action='RESERVATION_CANCEL',
+                      description=f'Solicitação rejeitada via API: {reservation.book.title} ({reservation.user.username})',
+                      request=request)
+        return Response({'message': 'Solicitação rejeitada. Exemplar devolvido ao estoque.'})
+
+
 class ReturnBookAPIView(APIView):
     permission_classes = [permissions.IsAdminUser]
 

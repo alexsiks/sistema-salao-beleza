@@ -13,6 +13,7 @@ urlpatterns = [
     path('reservations/', api_views.ReservationListAPIView.as_view(), name='api_reservations'),
     path('reservations/<int:pk>/cancel/', api_views.CancelReservationAPIView.as_view(), name='api_cancel_reservation'),
     path('reservations/<int:pk>/confirm/', api_views.ConfirmLoanAPIView.as_view(), name='api_confirm_loan'),
+    path('reservations/<int:pk>/reject/', api_views.RejectReservationAPIView.as_view(), name='api_reject_reservation'),
     path('reservations/<int:pk>/return/', api_views.ReturnBookAPIView.as_view(), name='api_return_book'),
     path('reservations/<int:pk>/fine-paid/', api_views.MarkFinePaidAPIView.as_view(), name='api_fine_paid'),
 

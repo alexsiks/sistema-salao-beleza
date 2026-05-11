@@ -15,6 +15,7 @@ urlpatterns = [
     path('my-loans/', views.my_reservations, name='my_reservations'),
     path('loan/<int:pk>/cancel/', views.cancel_reservation, name='cancel_reservation'),
     path('loan/<int:pk>/confirm/', views.confirm_loan, name='confirm_loan'),
+    path('loan/<int:pk>/reject/', views.reject_reservation, name='reject_reservation'),
     path('loan/<int:pk>/return/', views.return_book, name='return_book'),
     path('loan/<int:pk>/fine-paid/', views.mark_fine_paid, name='mark_fine_paid'),
     path('loans/', views.all_reservations, name='all_reservations'),

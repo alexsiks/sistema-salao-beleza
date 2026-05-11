@@ -140,10 +140,17 @@
               {% if res.status == 'PENDING' %}
               <form method="post" action="{% url 'books:confirm_loan' res.pk %}">
                 {% csrf_token %}
-                <button class="btn btn-success btn-sm w-100" onclick="return confirm('Confirmar entrega do livro?')">
-                  <i class="bi bi-check-circle me-1"></i>Confirmar
+                <button class="btn btn-success btn-sm w-100" onclick="return confirm('Aprovar e confirmar entrega do livro?')">
+                  <i class="bi bi-check-circle me-1"></i>Aprovar
                 </button>
               </form>
+              <button class="btn btn-danger btn-sm w-100"
+                      data-bs-toggle="modal" data-bs-target="#rejectModal"
+                      data-pk="{{ res.pk }}"
+                      data-book="{{ res.book.title|truncatechars:30 }}"
+                      data-user="{{ res.user.username }}">
+                <i class="bi bi-x-circle me-1"></i>Rejeitar
+              </button>
               {% endif %}
               {% if res.status in 'ACTIVE,OVERDUE,PENDING' %}
               <form method="post" action="{% url 'books:return_book' res.pk %}">
@@ -171,4 +178,51 @@
     </table>
   </div>
 </div>
+
+<!-- Modal de Rejeição -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold text-danger"><i class="bi bi-x-circle me-2"></i>Rejeitar Solicitação</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <form method="post" id="rejectForm">
+        {% csrf_token %}
+        <div class="modal-body">
+          <p class="text-muted mb-3">
+            Rejeitar solicitação de <strong id="modalUser"></strong> para
+            <strong id="modalBook"></strong>?<br>
+            <span class="text-success small">
+              <i class="bi bi-arrow-return-left me-1"></i>O exemplar será devolvido automaticamente ao estoque.
+            </span>
+          </p>
+          <div>
+            <label class="form-label fw-semibold">Motivo (opcional)</label>
+            <textarea name="reason" class="form-control" rows="2"
+              placeholder="Ex: Limite de empréstimos atingido, pendência anterior..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-danger px-4">
+            <i class="bi bi-x-circle me-1"></i>Confirmar Rejeição
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const rejectModal = document.getElementById('rejectModal');
+rejectModal.addEventListener('show.bs.modal', function(event) {
+  const btn = event.relatedTarget;
+  document.getElementById('modalUser').textContent = btn.dataset.user;
+  document.getElementById('modalBook').textContent = btn.dataset.book;
+  document.getElementById('rejectForm').action = '/books/loan/' + btn.dataset.pk + '/reject/';
+});
+</script>
 {% endblock %}

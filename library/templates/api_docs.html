@@ -178,7 +178,9 @@
 
         {% include "api_endpoint.html" with method="POST" path="/api/books/{id}/reserve/" auth="Token" description="Cria um empréstimo (status PENDING). Captura rental_price e fine_per_day no momento da solicitação. Erro se sem exemplares disponíveis." request_body="" response_body='{"id": 5, "book": 1, "book_title": "Dom Casmurro", "status": "PENDING", "rental_price_snapshot": "5.00", "fine_per_day_snapshot": "1.00", "total_amount": "5.00"}' %}
 
-        {% include "api_endpoint.html" with method="POST" path="/api/reservations/{id}/confirm/" auth="Token (Admin)" description="Confirma a retirada do livro. Define loan_date (hoje) e due_date (hoje + prazo). Muda status para ACTIVE." request_body="" response_body='{"message": "Empréstimo confirmado.", "loan": {"status": "ACTIVE", "loan_date": "2024-01-15", "due_date": "2024-01-29"}}' %}
+        {% include "api_endpoint.html" with method="POST" path="/api/reservations/{id}/confirm/" auth="Token (Admin)" description="Aprova a solicitação e confirma a retirada do livro. Define loan_date (hoje) e due_date (hoje + prazo). Muda status para ACTIVE." request_body="" response_body='{"message": "Empréstimo confirmado.", "loan": {"status": "ACTIVE", "loan_date": "2024-01-15", "due_date": "2024-01-29"}}' %}
+
+        {% include "api_endpoint.html" with method="POST" path="/api/reservations/{id}/reject/" auth="Token (Admin)" description="Rejeita uma solicitação pendente. O exemplar é devolvido automaticamente ao estoque (available_copies+1). Status passa para CANCELLED." request_body='{"reason": "Usuário possui pendência não quitada."}' response_body='{"message": "Solicitação rejeitada. Exemplar devolvido ao estoque."}' %}
 
         {% include "api_endpoint.html" with method="POST" path="/api/reservations/{id}/return/" auth="Token (Admin)" description="Registra a devolução. Calcula multa proporcional aos dias de atraso. Libera exemplar no acervo." request_body="" response_body='{"message": "Devolução registrada com sucesso.", "fine_amount": "3.00", "overdue_days": 3, "total_amount": "8.00", "loan": {"status": "RETURNED"}}' %}
 
