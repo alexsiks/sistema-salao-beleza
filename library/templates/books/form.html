@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Livro — Biblioteca{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="d-flex align-items-center mb-4">
+      <i class="bi bi-book display-5 me-3" style="color:var(--lib-primary)"></i>
+      <div>
+        <h2 class="fw-bold mb-0">{{ action }} Livro</h2>
+        {% if book %}<p class="text-muted mb-0">{{ book.title }}</p>{% endif %}
+      </div>
+    </div>
+    <div class="card p-4">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-semibold">Título *</label>
+            <input type="text" name="title" class="form-control" value="{{ form.instance.title }}" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Autor *</label>
+            <input type="text" name="author" class="form-control" value="{{ form.instance.author }}" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Editora</label>
+            <input type="text" name="publisher" class="form-control" value="{{ form.instance.publisher }}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">ISBN</label>
+            <input type="text" name="isbn" class="form-control" value="{{ form.instance.isbn }}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Ano de Publicação</label>
+            <input type="number" name="year" class="form-control" value="{{ form.instance.year }}" min="1000" max="2100">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Total de Exemplares</label>
+            <input type="number" name="total_copies" class="form-control" value="{{ form.instance.total_copies|default:1 }}" min="1" required>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Descrição *</label>
+            <textarea name="description" class="form-control" rows="5" required>{{ form.instance.description }}</textarea>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Imagem da Capa</label>
+            {% if form.instance.cover_image %}
+            <div class="mb-2">
+              <img src="{{ form.instance.cover_image.url }}" alt="Capa atual" style="height:120px;border-radius:8px;">
+              <small class="text-muted ms-2">Capa atual</small>
+            </div>
+            {% endif %}
+            <input type="file" name="cover_image" class="form-control" accept="image/*">
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Categorias</label>
+            <div class="row g-2">
+              {% for cat in form.fields.categories.queryset %}
+              <div class="col-md-3">
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="categories" value="{{ cat.id }}"
+                         id="cat{{ cat.id }}"
+                         {% if cat in form.instance.categories.all %}checked{% endif %}>
+                  <label class="form-check-label" for="cat{{ cat.id }}">{{ cat.name }}</label>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+        {% if form.errors %}
+        <div class="alert alert-danger mt-3">
+          {% for field in form %}{% for error in field.errors %}<div>{{ field.label }}: {{ error }}</div>{% endfor %}{% endfor %}
+        </div>
+        {% endif %}
+        <div class="d-flex gap-2 mt-4">
+          <button type="submit" class="btn btn-primary px-4 fw-semibold">
+            <i class="bi bi-check-circle me-2"></i>{{ action }}
+          </button>
+          <a href="{% if book %}{% url 'books:detail' book.pk %}{% else %}{% url 'books:list' %}{% endif %}"
+             class="btn btn-outline-secondary px-4">Cancelar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

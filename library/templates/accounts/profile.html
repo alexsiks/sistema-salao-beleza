@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% block title %}Meu Perfil — Biblioteca{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="d-flex align-items-center mb-4">
+      <i class="bi bi-person-circle display-5 me-3" style="color:var(--lib-primary)"></i>
+      <div>
+        <h2 class="fw-bold mb-0">Meu Perfil</h2>
+        <p class="text-muted mb-0">Atualize suas informações pessoais</p>
+      </div>
+    </div>
+    <div class="card p-4">
+      <form method="post" id="profileForm">
+        {% csrf_token %}
+        <h5 class="fw-bold mb-3 border-bottom pb-2"><i class="bi bi-person me-2"></i>Dados Pessoais</h5>
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Nome</label>
+            <input type="text" name="first_name" class="form-control" value="{{ form.fields.first_name.initial }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Sobrenome</label>
+            <input type="text" name="last_name" class="form-control" value="{{ form.fields.last_name.initial }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">E-mail</label>
+            <input type="email" name="email" class="form-control" value="{{ form.fields.email.initial }}">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Telefone</label>
+            <input type="text" name="phone" class="form-control" value="{{ form.instance.phone }}">
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Sobre mim</label>
+            <textarea name="bio" class="form-control" rows="2">{{ form.instance.bio }}</textarea>
+          </div>
+        </div>
+
+        <h5 class="fw-bold mb-3 border-bottom pb-2"><i class="bi bi-geo-alt me-2"></i>Localização</h5>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">CEP</label>
+            <div class="input-group">
+              <input type="text" name="cep" id="cep" class="form-control" value="{{ form.instance.cep }}" maxlength="9" placeholder="00000-000">
+              <button type="button" class="btn btn-outline-secondary" id="btnCep">
+                <i class="bi bi-search"></i>
+              </button>
+            </div>
+          </div>
+          <div class="col-md-8">
+            <label class="form-label fw-semibold">Logradouro</label>
+            <input type="text" name="logradouro" id="logradouro" class="form-control" value="{{ form.instance.logradouro }}">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold">Número</label>
+            <input type="text" name="numero" class="form-control" value="{{ form.instance.numero }}">
+          </div>
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">Complemento</label>
+            <input type="text" name="complemento" id="complemento" class="form-control" value="{{ form.instance.complemento }}">
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Bairro</label>
+            <input type="text" name="bairro" id="bairro" class="form-control" value="{{ form.instance.bairro }}">
+          </div>
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">Cidade</label>
+            <input type="text" name="cidade" id="cidade" class="form-control" value="{{ form.instance.cidade }}">
+          </div>
+          <div class="col-md-2">
+            <label class="form-label fw-semibold">Estado</label>
+            <input type="text" name="estado" id="estado" class="form-control" value="{{ form.instance.estado }}" maxlength="2">
+          </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-4">
+          <button type="submit" class="btn btn-primary px-4 fw-semibold">
+            <i class="bi bi-check-circle me-2"></i>Salvar Alterações
+          </button>
+          <a href="{% url 'books:list' %}" class="btn btn-outline-secondary px-4">Cancelar</a>
+        </div>
+      </form>
+    </div>
+
+    {% if profile.full_address %}
+    <div class="card mt-3 p-3 bg-light">
+      <small class="text-muted"><i class="bi bi-geo-alt-fill me-1"></i><strong>Endereço atual:</strong> {{ profile.full_address }}</small>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+document.getElementById('btnCep').addEventListener('click', function() {
+  const cep = document.getElementById('cep').value.replace(/\D/g,'');
+  if (cep.length !== 8) { alert('CEP inválido'); return; }
+  fetch('{% url "accounts:cep_lookup" %}?cep=' + cep)
+    .then(r => r.json())
+    .then(d => {
+      if (d.error) { alert(d.error); return; }
+      document.getElementById('logradouro').value = d.logradouro || '';
+      document.getElementById('bairro').value = d.bairro || '';
+      document.getElementById('cidade').value = d.cidade || '';
+      document.getElementById('estado').value = d.estado || '';
+      document.getElementById('complemento').value = d.complemento || '';
+    }).catch(() => alert('Erro ao consultar CEP'));
+});
+document.getElementById('cep').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') { e.preventDefault(); document.getElementById('btnCep').click(); }
+});
+</script>
+{% endblock %}

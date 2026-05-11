@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% block title %}Minhas Reservas — Biblioteca{% endblock %}
+{% block content %}
+<h2 class="fw-bold mb-4"><i class="bi bi-bookmark me-2"></i>Minhas Reservas</h2>
+<div class="row g-3">
+  {% for res in reservations %}
+  <div class="col-md-6">
+    <div class="card p-3 h-100">
+      <div class="d-flex gap-3">
+        {% if res.book.cover_image %}
+        <img src="{{ res.book.cover_image.url }}" style="width:70px;height:100px;object-fit:cover;border-radius:6px;" alt="">
+        {% else %}
+        <div style="width:70px;height:100px;background:linear-gradient(135deg,#1a3a5c,#2c5f8a);display:flex;align-items:center;justify-content:center;border-radius:6px;">
+          <i class="bi bi-book text-white fs-4"></i>
+        </div>
+        {% endif %}
+        <div class="flex-grow-1">
+          <h6 class="fw-bold mb-1">
+            <a href="{% url 'books:detail' res.book.pk %}" class="text-decoration-none text-dark">{{ res.book.title }}</a>
+          </h6>
+          <p class="text-muted small mb-2">{{ res.book.author }}</p>
+          <span class="badge
+            {% if res.status == 'ACTIVE' %}bg-success
+            {% elif res.status == 'PENDING' %}bg-warning text-dark
+            {% elif res.status == 'RETURNED' %}bg-primary
+            {% elif res.status == 'CANCELLED' %}bg-secondary
+            {% else %}bg-danger{% endif %}">
+            {{ res.get_status_display }}
+          </span>
+          <div class="mt-2 small text-muted">
+            <i class="bi bi-calendar3 me-1"></i>Reservado em: {{ res.reserved_at|date:"d/m/Y H:i" }}
+            {% if res.returned_at %}<br><i class="bi bi-check2-circle me-1"></i>Devolvido: {{ res.returned_at|date:"d/m/Y" }}{% endif %}
+          </div>
+          {% if res.status in 'PENDING,ACTIVE' %}
+          <form method="post" action="{% url 'books:cancel_reservation' res.pk %}" class="mt-2">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-danger btn-sm"
+                    onclick="return confirm('Cancelar esta reserva?')">
+              <i class="bi bi-x me-1"></i>Cancelar
+            </button>
+          </form>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+  {% empty %}
+  <div class="col-12 text-center py-5">
+    <i class="bi bi-bookmark display-1 text-muted"></i>
+    <h4 class="mt-3 text-muted">Nenhuma reserva encontrada</h4>
+    <a href="{% url 'books:list' %}" class="btn btn-primary mt-2">Ver Acervo</a>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}
