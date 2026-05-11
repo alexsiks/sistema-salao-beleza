@@ -38,6 +38,17 @@
             <label class="form-label fw-semibold">Total de Exemplares</label>
             <input type="number" name="total_copies" class="form-control" value="{{ form.instance.total_copies|default:1 }}" min="1" required>
           </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">
+              <i class="bi bi-tag me-1 text-success"></i>Valor do Empréstimo (R$)
+            </label>
+            <div class="input-group">
+              <span class="input-group-text">R$</span>
+              <input type="number" name="rental_price" class="form-control"
+                     value="{{ form.instance.rental_price|default:'0.00' }}" min="0" step="0.01">
+            </div>
+            <div class="form-text">Use 0 para empréstimo gratuito.</div>
+          </div>
           <div class="col-12">
             <label class="form-label fw-semibold">Descrição *</label>
             <textarea name="description" class="form-control" rows="5" required>{{ form.instance.description }}</textarea>

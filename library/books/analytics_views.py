@@ -4,13 +4,13 @@ Todos os endpoints retornam JSON plano e requerem autenticação por Token.
 Administradores têm acesso a todos os dados; usuários comuns veem apenas seus próprios dados.
 """
 from datetime import date, timedelta
-from django.db.models import Count, Avg, Q
+from django.db.models import Count, Avg, Q, Sum
 from django.contrib.auth.models import User
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import permissions
 
-from books.models import Book, Reservation, Comment, Rating, Category
+from books.models import Book, Reservation, Comment, Rating, Category, LibraryConfig
 from accounts.models import ActionLog, UserProfile
 
 
@@ -225,6 +225,17 @@ class AnalyticsSummaryView(APIView):
             .order_by('-n').first()
         )
 
+        config = LibraryConfig.get()
+        overdue_res = Reservation.objects.filter(
+            status__in=['ACTIVE', 'OVERDUE'], due_date__lt=today
+        ).count()
+        receita_emprestimos = Reservation.objects.filter(status='RETURNED').aggregate(
+            t=Sum('rental_price_snapshot'))['t'] or 0
+        total_multas = Reservation.objects.filter(status='RETURNED').aggregate(
+            t=Sum('fine_amount'))['t'] or 0
+        multas_pagas = Reservation.objects.filter(status='RETURNED', fine_paid=True).aggregate(
+            t=Sum('fine_amount'))['t'] or 0
+
         return Response({
             'data_referencia':         today.strftime('%Y-%m-%d'),
             'acervo': {
@@ -238,13 +249,23 @@ class AnalyticsSummaryView(APIView):
                 'novos_ultimos_30dias':new_users_last_30,
                 'logins_ultimos_30dias':logins_last_30,
             },
-            'reservas': {
+            'emprestimos': {
                 'total':               total_reservations,
-                'ativas':              active_res,
-                'devolvidas':          returned_res,
-                'canceladas':          cancelled_res,
+                'pendentes':           Reservation.objects.filter(status='PENDING').count(),
+                'ativos':              active_res,
+                'em_atraso':           overdue_res,
+                'devolvidos':          returned_res,
+                'cancelados':          cancelled_res,
                 'ultimos_30dias':      res_last_30,
                 'ultimos_7dias':       res_last_7,
+            },
+            'financeiro': {
+                'prazo_emprestimo_dias':   config.max_loan_days,
+                'multa_por_dia':           str(config.fine_per_day),
+                'receita_emprestimos':     str(receita_emprestimos),
+                'total_multas_cobradas':   str(total_multas),
+                'total_multas_pagas':      str(multas_pagas),
+                'total_multas_pendentes':  str(float(total_multas) - float(multas_pagas)),
             },
             'avaliacoes': {
                 'total':               total_ratings,

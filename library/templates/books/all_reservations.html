@@ -1,24 +1,70 @@
 {% extends 'base.html' %}
-{% block title %}Todas as Reservas — Biblioteca{% endblock %}
+{% block title %}Gestão de Empréstimos — Biblioteca{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h2 class="fw-bold"><i class="bi bi-list-check me-2"></i>Todas as Reservas</h2>
-  <span class="badge bg-secondary fs-6">{{ reservations.count }} total</span>
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="fw-bold"><i class="bi bi-list-check me-2"></i>Gestão de Empréstimos</h2>
+  <div class="d-flex gap-2">
+    <a href="{% url 'books:library_config' %}" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-gear me-1"></i>Configurações
+    </a>
+    <span class="badge bg-secondary fs-6 d-flex align-items-center">{{ reservations.count }} registros</span>
+  </div>
 </div>
-<form method="get" class="card p-3 mb-4">
+
+<!-- Financial summary cards -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card text-center p-3 border-0 shadow-sm" style="border-top: 3px solid #ffc107 !important;">
+      <div class="text-muted small">Pendentes</div>
+      <div class="fs-3 fw-bold text-warning">{{ pending_count }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center p-3 border-0 shadow-sm" style="border-top: 3px solid #198754 !important;">
+      <div class="text-muted small">Em Empréstimo</div>
+      <div class="fs-3 fw-bold text-success">{{ active_count }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center p-3 border-0 shadow-sm" style="border-top: 3px solid #dc3545 !important;">
+      <div class="text-muted small">Em Atraso</div>
+      <div class="fs-3 fw-bold text-danger">{{ overdue_count }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card text-center p-3 border-0 shadow-sm" style="border-top: 3px solid #6c757d !important;">
+      <div class="text-muted small">Multas Pendentes</div>
+      <div class="fs-3 fw-bold text-secondary">R$ {{ fine_pending }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- Config banner -->
+<div class="alert alert-light border d-flex justify-content-between align-items-center mb-3 py-2">
+  <span class="small text-muted">
+    <i class="bi bi-info-circle me-1"></i>
+    Prazo: <strong>{{ config.max_loan_days }} dias</strong> &nbsp;|&nbsp;
+    Multa: <strong>R$ {{ config.fine_per_day }}/dia de atraso</strong>
+  </span>
+  <a href="{% url 'books:library_config' %}" class="btn btn-sm btn-outline-secondary py-0">Alterar</a>
+</div>
+
+<!-- Filter -->
+<form method="get" class="card p-3 mb-3">
   <div class="row g-2 align-items-end">
     <div class="col-md-4">
       <label class="form-label fw-semibold small">Filtrar por Status</label>
-      <select name="status" class="form-select">
+      <select name="status" class="form-select form-select-sm">
         <option value="">Todos</option>
         {% for val, label in status_choices %}
         <option value="{{ val }}" {% if status_filter == val %}selected{% endif %}>{{ label }}</option>
         {% endfor %}
       </select>
     </div>
-    <div class="col-md-2"><button type="submit" class="btn btn-primary w-100">Filtrar</button></div>
+    <div class="col-md-2"><button type="submit" class="btn btn-primary btn-sm w-100">Filtrar</button></div>
   </div>
 </form>
+
 <div class="card">
   <div class="table-responsive">
     <table class="table table-hover align-middle mb-0">
@@ -28,31 +74,98 @@
           <th>Usuário</th>
           <th>Livro</th>
           <th>Status</th>
-          <th>Reservado em</th>
-          <th>Prazo</th>
+          <th>Empréstimo</th>
+          <th>Devolução Prevista</th>
           <th>Devolvido</th>
+          <th>Valor</th>
+          <th>Multa</th>
+          <th>Ações</th>
         </tr>
       </thead>
       <tbody>
         {% for res in reservations %}
-        <tr>
-          <td>{{ res.pk }}</td>
-          <td><strong>{{ res.user.username }}</strong><br><small class="text-muted">{{ res.user.email }}</small></td>
-          <td><a href="{% url 'books:detail' res.book.pk %}" class="text-decoration-none">{{ res.book.title }}</a></td>
+        <tr class="{% if res.status == 'OVERDUE' %}table-danger{% elif res.status == 'PENDING' %}table-warning{% endif %}">
+          <td><small class="text-muted">#{{ res.pk }}</small></td>
+          <td>
+            <strong>{{ res.user.username }}</strong>
+            <br><small class="text-muted">{{ res.user.get_full_name }}</small>
+          </td>
+          <td>
+            <a href="{% url 'books:detail' res.book.pk %}" class="text-decoration-none fw-semibold">
+              {{ res.book.title|truncatechars:30 }}
+            </a>
+          </td>
           <td>
             <span class="badge
               {% if res.status == 'ACTIVE' %}bg-success
               {% elif res.status == 'PENDING' %}bg-warning text-dark
+              {% elif res.status == 'OVERDUE' %}bg-danger
               {% elif res.status == 'RETURNED' %}bg-primary
               {% elif res.status == 'CANCELLED' %}bg-secondary
-              {% else %}bg-danger{% endif %}">{{ res.get_status_display }}</span>
+              {% else %}bg-dark{% endif %}">
+              {{ res.get_status_display }}
+            </span>
+            {% if res.status == 'OVERDUE' %}
+            <br><small class="text-danger fw-semibold">{{ res.overdue_days }}d atraso</small>
+            {% endif %}
           </td>
-          <td><small>{{ res.reserved_at|date:"d/m/Y H:i" }}</small></td>
-          <td><small>{{ res.pickup_deadline|date:"d/m/Y"|default:"—" }}</small></td>
+          <td><small>{{ res.loan_date|date:"d/m/Y"|default:"—" }}</small></td>
+          <td>
+            <small class="{% if res.is_overdue %}text-danger fw-semibold{% endif %}">
+              {{ res.due_date|date:"d/m/Y"|default:"—" }}
+            </small>
+          </td>
           <td><small>{{ res.returned_at|date:"d/m/Y"|default:"—" }}</small></td>
+          <td>
+            {% if res.rental_price_snapshot > 0 %}
+            <small class="text-success fw-semibold">R$ {{ res.rental_price_snapshot }}</small>
+            {% else %}
+            <small class="text-muted">Grátis</small>
+            {% endif %}
+          </td>
+          <td>
+            {% if res.fine_amount > 0 %}
+              <small class="{% if res.fine_paid %}text-muted text-decoration-line-through{% else %}text-danger fw-semibold{% endif %}">
+                R$ {{ res.fine_amount }}
+              </small>
+              {% if res.fine_paid %}<span class="badge bg-success ms-1 small">Paga</span>{% endif %}
+            {% elif res.status == 'OVERDUE' or res.is_overdue %}
+              <small class="text-danger">R$ {{ res.calculated_fine }} (atual)</small>
+            {% else %}
+              <small class="text-muted">—</small>
+            {% endif %}
+          </td>
+          <td>
+            <div class="d-flex flex-column gap-1">
+              {% if res.status == 'PENDING' %}
+              <form method="post" action="{% url 'books:confirm_loan' res.pk %}">
+                {% csrf_token %}
+                <button class="btn btn-success btn-sm w-100" onclick="return confirm('Confirmar entrega do livro?')">
+                  <i class="bi bi-check-circle me-1"></i>Confirmar
+                </button>
+              </form>
+              {% endif %}
+              {% if res.status in 'ACTIVE,OVERDUE,PENDING' %}
+              <form method="post" action="{% url 'books:return_book' res.pk %}">
+                {% csrf_token %}
+                <button class="btn btn-primary btn-sm w-100" onclick="return confirm('Registrar devolução deste livro?')">
+                  <i class="bi bi-arrow-return-left me-1"></i>Devolver
+                </button>
+              </form>
+              {% endif %}
+              {% if res.status == 'RETURNED' and res.fine_amount > 0 and not res.fine_paid %}
+              <form method="post" action="{% url 'books:mark_fine_paid' res.pk %}">
+                {% csrf_token %}
+                <button class="btn btn-warning btn-sm w-100">
+                  <i class="bi bi-cash me-1"></i>Multa Paga
+                </button>
+              </form>
+              {% endif %}
+            </div>
+          </td>
         </tr>
         {% empty %}
-        <tr><td colspan="7" class="text-center text-muted py-4">Nenhuma reserva encontrada.</td></tr>
+        <tr><td colspan="10" class="text-center text-muted py-4">Nenhum empréstimo encontrado.</td></tr>
         {% endfor %}
       </tbody>
     </table>

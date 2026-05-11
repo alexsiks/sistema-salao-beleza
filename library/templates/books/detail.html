@@ -15,21 +15,57 @@
     {% else %}
     <div class="book-cover-placeholder rounded-3 shadow" style="height:300px"><i class="bi bi-book"></i></div>
     {% endif %}
+
     <div class="card mt-3 p-3">
+      <!-- Rental price & loan info -->
+      <div class="mb-3 text-center">
+        {% if book.rental_price > 0 %}
+        <div class="fs-4 fw-bold text-success">R$ {{ book.rental_price }}</div>
+        <div class="small text-muted">por empréstimo</div>
+        {% else %}
+        <div class="fs-5 fw-bold text-success"><i class="bi bi-gift me-1"></i>Empréstimo Gratuito</div>
+        {% endif %}
+        {% if config %}
+        <div class="small text-muted mt-1">
+          <i class="bi bi-calendar-range me-1"></i>Prazo: {{ config.max_loan_days }} dias
+          <br><i class="bi bi-exclamation-circle me-1"></i>Multa: R$ {{ config.fine_per_day }}/dia de atraso
+        </div>
+        {% endif %}
+      </div>
+      <hr class="my-2">
       <div class="d-grid gap-2">
         {% if user.is_authenticated %}
           {% if user_reservation %}
-          <button class="btn btn-warning disabled"><i class="bi bi-bookmark-check me-2"></i>Reservado</button>
+          <div class="text-center">
+            <span class="badge
+              {% if user_reservation.status == 'ACTIVE' %}bg-success
+              {% elif user_reservation.status == 'PENDING' %}bg-warning text-dark
+              {% elif user_reservation.status == 'OVERDUE' %}bg-danger
+              {% else %}bg-secondary{% endif %} fs-6 py-2 px-3">
+              <i class="bi bi-bookmark-check me-1"></i>{{ user_reservation.get_status_display }}
+            </span>
+            {% if user_reservation.due_date %}
+            <div class="small text-muted mt-1">
+              Devolução: {{ user_reservation.due_date|date:"d/m/Y" }}
+              {% if user_reservation.is_overdue %}
+              <br><span class="text-danger fw-semibold">{{ user_reservation.overdue_days }} dia(s) em atraso</span>
+              {% endif %}
+            </div>
+            {% endif %}
+          </div>
           {% elif book.is_available %}
           <form method="post" action="{% url 'books:reserve' book.pk %}">
             {% csrf_token %}
-            <button type="submit" class="btn btn-primary w-100"><i class="bi bi-bookmark-plus me-2"></i>Reservar</button>
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="bi bi-bookmark-plus me-2"></i>
+              {% if book.rental_price > 0 %}Solicitar Empréstimo (R$ {{ book.rental_price }}){% else %}Solicitar Empréstimo{% endif %}
+            </button>
           </form>
           {% else %}
           <button class="btn btn-secondary disabled"><i class="bi bi-x-circle me-2"></i>Indisponível</button>
           {% endif %}
         {% else %}
-        <a href="{% url 'accounts:login' %}" class="btn btn-primary"><i class="bi bi-box-arrow-in-right me-2"></i>Login para reservar</a>
+        <a href="{% url 'accounts:login' %}" class="btn btn-primary"><i class="bi bi-box-arrow-in-right me-2"></i>Login para solicitar</a>
         {% endif %}
         {% if user.is_staff %}
         <a href="{% url 'books:edit' book.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil me-1"></i>Editar</a>

@@ -16,7 +16,9 @@
               <a class="nav-link py-1 px-2 rounded" href="#section-auth-endpoints">Autenticação</a>
               <a class="nav-link py-1 px-2 rounded" href="#section-users">Usuários</a>
               <a class="nav-link py-1 px-2 rounded" href="#section-books">Livros</a>
-              <a class="nav-link py-1 px-2 rounded" href="#section-reservations">Reservas</a>
+              <a class="nav-link py-1 px-2 rounded" href="#section-config">Configuração</a>
+              <a class="nav-link py-1 px-2 rounded" href="#section-reservations">Empréstimos</a>
+              <a class="nav-link py-1 px-2 rounded" href="#section-financial">Financeiro</a>
               <a class="nav-link py-1 px-2 rounded" href="#section-categories">Categorias</a>
               <a class="nav-link py-1 px-2 rounded" href="#section-analytics">Analytics</a>
               <a class="nav-link py-1 px-2 rounded" href="#section-logs">Logs</a>
@@ -148,13 +150,51 @@
         {% include "api_endpoint.html" with method="POST" path="/api/books/{id}/rate/" auth="Token" description="Avalia o livro com uma nota de 1 a 5. Atualiza avaliação existente." request_body='{"score": 5}' response_body='{"id": 2, "user_username": "joao", "book": 1, "score": 5}' %}
       </section>
 
-      <!-- Section: Reservations -->
+      <!-- Section: Config -->
+      <section id="section-config" class="mb-5">
+        <h3 class="fw-bold border-bottom pb-2 mb-3">Configuração da Biblioteca</h3>
+        <div class="alert alert-light border mb-3">
+          Define as regras de negócio para todos os empréstimos: prazo e multa por atraso. Estas configurações são capturadas como <em>snapshot</em> no momento da solicitação.
+        </div>
+
+        {% include "api_endpoint.html" with method="GET" path="/api/config/" auth="Token" description="Retorna a configuração atual de empréstimo da biblioteca." request_body="" response_body='{"fine_per_day": "1.00", "max_loan_days": 14}' %}
+
+        {% include "api_endpoint.html" with method="PUT" path="/api/config/" auth="Token (Admin)" description="Atualiza prazo máximo de empréstimo e multa por dia de atraso. Apenas administradores." request_body='{"fine_per_day": "2.50", "max_loan_days": 7}' response_body='{"fine_per_day": "2.50", "max_loan_days": 7}' %}
+
+        {% include "api_endpoint.html" with method="PATCH" path="/api/config/" auth="Token (Admin)" description="Atualiza parcialmente a configuração da biblioteca." request_body='{"max_loan_days": 21}' response_body='{"fine_per_day": "1.00", "max_loan_days": 21}' %}
+      </section>
+
+      <!-- Section: Reservations / Loans -->
       <section id="section-reservations" class="mb-5">
-        <h3 class="fw-bold border-bottom pb-2 mb-3">Reservas</h3>
+        <h3 class="fw-bold border-bottom pb-2 mb-3">Empréstimos</h3>
 
-        {% include "api_endpoint.html" with method="GET" path="/api/reservations/" auth="Token" description="Lista as reservas do usuário. Administradores veem todas as reservas." request_body="" response_body='{"count": 2, "results": [{"id": 1, "book_title": "Dom Casmurro", "status": "ACTIVE", "status_display": "Ativa", "reserved_at": "2024-01-10T08:00:00Z"}]}' %}
+        <div class="alert alert-light border mb-3">
+          <strong>Fluxo de vida de um empréstimo:</strong><br>
+          <code>PENDING</code> (solicitado) → <code>ACTIVE</code> (confirmado pelo admin) → <code>OVERDUE</code> (automático, com atraso) → <code>RETURNED</code> (devolvido)<br>
+          <small class="text-muted">Filtros: <code>?status=ACTIVE</code> &nbsp; <code>?overdue=1</code> (apenas atrasados)</small>
+        </div>
 
-        {% include "api_endpoint.html" with method="POST" path="/api/reservations/{id}/cancel/" auth="Token" description="Cancela uma reserva. Apenas o dono da reserva pode cancelar." request_body="" response_body='{"message": "Reserva cancelada."}' %}
+        {% include "api_endpoint.html" with method="GET" path="/api/reservations/" auth="Token" description="Lista empréstimos. Usuários veem os próprios; admins veem todos. Retorna campos financeiros completos." request_body="" response_body='{"count": 2, "results": [{"id": 1, "book_title": "Dom Casmurro", "status": "ACTIVE", "status_display": "Em Empréstimo", "loan_date": "2024-01-15", "due_date": "2024-01-29", "rental_price_snapshot": "5.00", "fine_per_day_snapshot": "1.00", "fine_amount": "0.00", "fine_paid": false, "is_overdue": false, "overdue_days": 0, "calculated_fine": "0.00", "total_amount": "5.00"}]}' %}
+
+        {% include "api_endpoint.html" with method="POST" path="/api/books/{id}/reserve/" auth="Token" description="Cria um empréstimo (status PENDING). Captura rental_price e fine_per_day no momento da solicitação. Erro se sem exemplares disponíveis." request_body="" response_body='{"id": 5, "book": 1, "book_title": "Dom Casmurro", "status": "PENDING", "rental_price_snapshot": "5.00", "fine_per_day_snapshot": "1.00", "total_amount": "5.00"}' %}
+
+        {% include "api_endpoint.html" with method="POST" path="/api/reservations/{id}/confirm/" auth="Token (Admin)" description="Confirma a retirada do livro. Define loan_date (hoje) e due_date (hoje + prazo). Muda status para ACTIVE." request_body="" response_body='{"message": "Empréstimo confirmado.", "loan": {"status": "ACTIVE", "loan_date": "2024-01-15", "due_date": "2024-01-29"}}' %}
+
+        {% include "api_endpoint.html" with method="POST" path="/api/reservations/{id}/return/" auth="Token (Admin)" description="Registra a devolução. Calcula multa proporcional aos dias de atraso. Libera exemplar no acervo." request_body="" response_body='{"message": "Devolução registrada com sucesso.", "fine_amount": "3.00", "overdue_days": 3, "total_amount": "8.00", "loan": {"status": "RETURNED"}}' %}
+
+        {% include "api_endpoint.html" with method="POST" path="/api/reservations/{id}/fine-paid/" auth="Token (Admin)" description="Marca a multa de um empréstimo devolvido como paga. Apenas para empréstimos com multa > 0." request_body="" response_body='{"message": "Multa de R$ 3.00 marcada como paga."}' %}
+
+        {% include "api_endpoint.html" with method="POST" path="/api/reservations/{id}/cancel/" auth="Token" description="Cancela uma solicitação pendente. Apenas o próprio usuário pode cancelar e somente status PENDING." request_body="" response_body='{"message": "Solicitação cancelada."}' %}
+      </section>
+
+      <!-- Section: Financial -->
+      <section id="section-financial" class="mb-5">
+        <h3 class="fw-bold border-bottom pb-2 mb-3">Resumo Financeiro</h3>
+        <div class="alert alert-light border mb-3">
+          Visão consolidada de receitas de empréstimos, multas cobradas/pagas e status da carteira. Apenas administradores.
+        </div>
+
+        {% include "api_endpoint.html" with method="GET" path="/api/financial/" auth="Token (Admin)" description="Retorna resumo financeiro consolidado: receita de empréstimos, total de multas cobradas, pagas e pendentes, e contadores de empréstimos por status." request_body="" response_body='{"receita_emprestimos": "125.00", "total_multas_cobradas": "45.00", "total_multas_pagas": "30.00", "total_multas_pendentes": "15.00", "emprestimos_em_atraso": 3, "emprestimos_ativos": 8, "emprestimos_pendentes": 2, "total_emprestimos": 50, "total_devolvidos": 40}' %}
       </section>
 
       <!-- Section: Categories -->

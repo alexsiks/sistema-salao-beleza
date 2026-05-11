@@ -1,5 +1,11 @@
 from rest_framework import serializers
-from .models import Book, Category, Reservation, Comment, Rating
+from .models import Book, Category, Reservation, Comment, Rating, LibraryConfig
+
+
+class LibraryConfigSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LibraryConfig
+        fields = ['fine_per_day', 'max_loan_days']
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -42,7 +48,7 @@ class BookListSerializer(serializers.ModelSerializer):
         model = Book
         fields = ['id', 'title', 'author', 'publisher', 'year', 'cover_image',
                   'categories', 'available_copies', 'total_copies', 'is_available',
-                  'average_rating', 'rating_count', 'created_at']
+                  'rental_price', 'average_rating', 'rating_count', 'created_at']
 
 
 class BookDetailSerializer(serializers.ModelSerializer):
@@ -61,7 +67,8 @@ class BookDetailSerializer(serializers.ModelSerializer):
         model = Book
         fields = ['id', 'title', 'author', 'isbn', 'publisher', 'year', 'description',
                   'cover_image', 'categories', 'category_ids', 'total_copies',
-                  'available_copies', 'is_available', 'average_rating', 'rating_count',
+                  'available_copies', 'is_available', 'rental_price',
+                  'average_rating', 'rating_count',
                   'comments', 'created_by_username', 'created_at', 'updated_at']
         read_only_fields = ['id', 'available_copies', 'is_available', 'average_rating',
                             'rating_count', 'created_by_username', 'created_at', 'updated_at']
@@ -69,14 +76,35 @@ class BookDetailSerializer(serializers.ModelSerializer):
 
 class ReservationSerializer(serializers.ModelSerializer):
     user_username = serializers.CharField(source='user.username', read_only=True)
+    user_full_name = serializers.SerializerMethodField()
     book_title = serializers.CharField(source='book.title', read_only=True)
     book_author = serializers.CharField(source='book.author', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
+    is_overdue = serializers.BooleanField(read_only=True)
+    overdue_days = serializers.IntegerField(read_only=True)
+    calculated_fine = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    total_amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
 
     class Meta:
         model = Reservation
-        fields = ['id', 'user', 'user_username', 'book', 'book_title', 'book_author',
-                  'status', 'status_display', 'reserved_at', 'pickup_deadline',
-                  'returned_at', 'notes']
-        read_only_fields = ['id', 'user', 'user_username', 'book_title', 'book_author',
-                            'status', 'status_display', 'reserved_at']
+        fields = [
+            'id', 'user', 'user_username', 'user_full_name',
+            'book', 'book_title', 'book_author',
+            'status', 'status_display',
+            'reserved_at', 'loan_date', 'due_date', 'returned_at',
+            'rental_price_snapshot', 'fine_per_day_snapshot',
+            'fine_amount', 'fine_paid', 'total_amount',
+            'is_overdue', 'overdue_days', 'calculated_fine',
+            'notes',
+        ]
+        read_only_fields = [
+            'id', 'user', 'user_username', 'user_full_name',
+            'book_title', 'book_author', 'status', 'status_display',
+            'reserved_at', 'loan_date', 'due_date', 'returned_at',
+            'rental_price_snapshot', 'fine_per_day_snapshot',
+            'fine_amount', 'total_amount',
+            'is_overdue', 'overdue_days', 'calculated_fine',
+        ]
+
+    def get_user_full_name(self, obj):
+        return obj.user.get_full_name() or obj.user.username

@@ -47,13 +47,14 @@
         <li class="nav-item"><a class="nav-link" href="{% url 'books:list' %}"><i class="bi bi-grid me-1"></i>Acervo</a></li>
         <li class="nav-item"><a class="nav-link api-link" href="{% url 'api_docs' %}"><i class="bi bi-lightning-charge me-1"></i>API</a></li>
         {% if user.is_authenticated %}
-        <li class="nav-item"><a class="nav-link" href="{% url 'books:my_reservations' %}"><i class="bi bi-bookmark me-1"></i>Minhas Reservas</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'books:my_reservations' %}"><i class="bi bi-bookmark me-1"></i>Meus Empréstimos</a></li>
         {% if user.is_staff %}
         <li class="nav-item dropdown">
           <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown"><i class="bi bi-shield-check me-1"></i>Admin</a>
           <ul class="dropdown-menu">
             <li><a class="dropdown-item" href="{% url 'books:create' %}"><i class="bi bi-plus-circle me-2"></i>Cadastrar Livro</a></li>
-            <li><a class="dropdown-item" href="{% url 'books:all_reservations' %}"><i class="bi bi-list-check me-2"></i>Todas as Reservas</a></li>
+            <li><a class="dropdown-item" href="{% url 'books:all_reservations' %}"><i class="bi bi-list-check me-2"></i>Gestão de Empréstimos</a></li>
+            <li><a class="dropdown-item" href="{% url 'books:library_config' %}"><i class="bi bi-sliders me-2"></i>Configurações</a></li>
             <li><a class="dropdown-item" href="{% url 'accounts:user_list' %}"><i class="bi bi-people me-2"></i>Usuários</a></li>
             <li><a class="dropdown-item" href="{% url 'accounts:action_logs' %}"><i class="bi bi-journal-text me-2"></i>Logs de Ações</a></li>
             <li><hr class="dropdown-divider"></li>

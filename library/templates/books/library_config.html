@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}Configurações da Biblioteca{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-6">
+    <div class="d-flex align-items-center mb-4">
+      <i class="bi bi-gear display-5 me-3" style="color:var(--lib-primary)"></i>
+      <div>
+        <h2 class="fw-bold mb-0">Configurações da Biblioteca</h2>
+        <p class="text-muted mb-0">Regras de negócio para empréstimos e multas</p>
+      </div>
+    </div>
+
+    <div class="card p-4 mb-4">
+      <form method="post">
+        {% csrf_token %}
+        <div class="row g-4">
+          <div class="col-12">
+            <label class="form-label fw-semibold">Prazo Máximo de Empréstimo (dias)</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-calendar-range"></i></span>
+              <input type="number" name="max_loan_days" class="form-control form-control-lg"
+                     value="{{ config.max_loan_days }}" min="1" max="365" required>
+              <span class="input-group-text">dias</span>
+            </div>
+            <div class="form-text">Número de dias que o usuário tem para devolver o livro após retirada.</div>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Multa por Dia de Atraso</label>
+            <div class="input-group">
+              <span class="input-group-text">R$</span>
+              <input type="number" name="fine_per_day" class="form-control form-control-lg"
+                     value="{{ config.fine_per_day }}" min="0" step="0.01" required>
+              <span class="input-group-text">por dia</span>
+            </div>
+            <div class="form-text">Valor cobrado por dia de atraso na devolução. Use 0 para sem multa.</div>
+          </div>
+        </div>
+
+        {% if form.errors %}
+        <div class="alert alert-danger mt-3">
+          {% for field in form %}{% for error in field.errors %}<div>{{ field.label }}: {{ error }}</div>{% endfor %}{% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="d-flex gap-2 mt-4">
+          <button type="submit" class="btn btn-primary px-4 fw-semibold">
+            <i class="bi bi-save me-2"></i>Salvar Configurações
+          </button>
+          <a href="{% url 'books:all_reservations' %}" class="btn btn-outline-secondary px-4">Voltar</a>
+        </div>
+      </form>
+    </div>
+
+    <div class="card border-0 p-4" style="background: #f8f9fa;">
+      <h6 class="fw-bold mb-3"><i class="bi bi-calculator me-2"></i>Como funciona o cálculo</h6>
+      <div class="row g-3">
+        <div class="col-12">
+          <div class="d-flex align-items-start gap-3">
+            <span class="badge bg-primary rounded-pill fs-6 p-2">1</span>
+            <div>
+              <strong>Solicitação</strong>
+              <p class="text-muted small mb-0">Usuário solicita empréstimo. O valor do livro e a multa/dia são registrados no momento da solicitação.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="d-flex align-items-start gap-3">
+            <span class="badge bg-success rounded-pill fs-6 p-2">2</span>
+            <div>
+              <strong>Confirmação de Retirada</strong>
+              <p class="text-muted small mb-0">Admin confirma que o livro foi retirado. Data do empréstimo e prazo de devolução são definidos automaticamente (hoje + {{ config.max_loan_days }} dias).</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="d-flex align-items-start gap-3">
+            <span class="badge bg-warning text-dark rounded-pill fs-6 p-2">3</span>
+            <div>
+              <strong>Devolução</strong>
+              <p class="text-muted small mb-0">Admin registra a devolução. Se houver atraso, a multa é calculada automaticamente: <strong>dias de atraso × R$ {{ config.fine_per_day }}</strong>.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="d-flex align-items-start gap-3">
+            <span class="badge bg-danger rounded-pill fs-6 p-2">4</span>
+            <div>
+              <strong>Pagamento da Multa</strong>
+              <p class="text-muted small mb-0">Após cobrar a multa, admin marca como "Multa Paga" no sistema.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
