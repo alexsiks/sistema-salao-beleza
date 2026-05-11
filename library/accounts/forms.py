@@ -8,8 +8,11 @@ class RegisterForm(UserCreationForm):
     email      = forms.EmailField(required=True, label='E-mail')
     first_name = forms.CharField(max_length=50, required=True, label='Nome')
     last_name  = forms.CharField(max_length=50, required=True, label='Sobrenome')
+    gender     = forms.ChoiceField(choices=[('', '— Selecione —')] + UserProfile.GENDER_CHOICES,
+                                   required=True, label='Sexo')
+    birth_date = forms.DateField(required=True, label='Data de Nascimento',
+                                 widget=forms.DateInput(attrs={'type': 'date'}))
     phone      = forms.CharField(max_length=20, required=True, label='Telefone')
-
     cep        = forms.CharField(max_length=9,   required=True, label='CEP')
     logradouro = forms.CharField(max_length=200, required=True, label='Logradouro')
     numero     = forms.CharField(max_length=10,  required=True, label='Número')
@@ -19,9 +22,8 @@ class RegisterForm(UserCreationForm):
     estado     = forms.CharField(max_length=2,   required=True, label='Estado')
 
     class Meta:
-        model = User
-        fields = ('username', 'first_name', 'last_name', 'email',
-                  'password1', 'password2')
+        model  = User
+        fields = ('username', 'first_name', 'last_name', 'email', 'password1', 'password2')
 
     def save(self, commit=True):
         user = super().save(commit=False)
@@ -34,16 +36,18 @@ class RegisterForm(UserCreationForm):
 
 
 class UserProfileForm(forms.ModelForm):
-    first_name  = forms.CharField(max_length=50, required=True,  label='Nome')
-    last_name   = forms.CharField(max_length=50, required=True,  label='Sobrenome')
-    email       = forms.EmailField(required=True,                 label='E-mail')
-    phone       = forms.CharField(max_length=20, required=True,  label='Telefone')
+    first_name = forms.CharField(max_length=50, required=True, label='Nome')
+    last_name  = forms.CharField(max_length=50, required=True, label='Sobrenome')
+    email      = forms.EmailField(required=True,               label='E-mail')
+    phone      = forms.CharField(max_length=20, required=True, label='Telefone')
 
     class Meta:
         model  = UserProfile
-        fields = ('phone', 'cep', 'logradouro', 'numero', 'complemento',
-                  'bairro', 'cidade', 'estado', 'bio')
+        fields = ('gender', 'birth_date', 'phone', 'cep', 'logradouro', 'numero',
+                  'complemento', 'bairro', 'cidade', 'estado', 'bio')
         labels = {
+            'gender':      'Sexo',
+            'birth_date':  'Data de Nascimento',
             'phone':       'Telefone',
             'cep':         'CEP',
             'logradouro':  'Logradouro',
@@ -54,17 +58,16 @@ class UserProfileForm(forms.ModelForm):
             'estado':      'Estado',
             'bio':         'Sobre mim',
         }
+        widgets = {
+            'birth_date': forms.DateInput(attrs={'type': 'date'}),
+        }
 
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
-
-        # Campos obrigatórios
-        for field in ('cep', 'logradouro', 'numero', 'bairro', 'cidade', 'estado'):
+        for field in ('cep', 'logradouro', 'numero', 'bairro', 'cidade', 'estado', 'gender', 'birth_date'):
             self.fields[field].required = True
-
         self.fields['complemento'].required = False
-
         if user:
             self.fields['first_name'].initial = user.first_name
             self.fields['last_name'].initial  = user.last_name
