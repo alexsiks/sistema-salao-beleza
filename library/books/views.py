@@ -78,7 +78,15 @@ def book_edit(request, pk):
     book = get_object_or_404(Book, pk=pk)
     form = BookForm(request.POST or None, request.FILES or None, instance=book)
     if request.method == 'POST' and form.is_valid():
-        form.save()
+        instance = form.save(commit=False)
+        # Se nenhum arquivo novo foi enviado E o usuário não marcou "remover",
+        # preserva a imagem existente
+        if not request.FILES.get('cover_image') and not request.POST.get('cover_image_clear'):
+            instance.cover_image = book.cover_image
+        elif request.POST.get('cover_image_clear'):
+            instance.cover_image = None
+        instance.save()
+        form.save_m2m()
         ActionLog.log(user=request.user, action='BOOK_UPDATE',
                       description=f'Livro editado: {book.title}', request=request)
         messages.success(request, f'Livro "{book.title}" atualizado!')

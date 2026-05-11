@@ -16,27 +16,33 @@
         <div class="row g-3">
           <div class="col-12">
             <label class="form-label fw-semibold">Título *</label>
-            <input type="text" name="title" class="form-control" value="{{ form.instance.title }}" required>
+            <input type="text" name="title" class="form-control"
+                   value="{{ form.instance.title }}" required>
           </div>
           <div class="col-md-6">
             <label class="form-label fw-semibold">Autor *</label>
-            <input type="text" name="author" class="form-control" value="{{ form.instance.author }}" required>
+            <input type="text" name="author" class="form-control"
+                   value="{{ form.instance.author }}" required>
           </div>
           <div class="col-md-6">
             <label class="form-label fw-semibold">Editora</label>
-            <input type="text" name="publisher" class="form-control" value="{{ form.instance.publisher }}">
+            <input type="text" name="publisher" class="form-control"
+                   value="{{ form.instance.publisher }}">
           </div>
           <div class="col-md-4">
             <label class="form-label fw-semibold">ISBN</label>
-            <input type="text" name="isbn" class="form-control" value="{{ form.instance.isbn }}">
+            <input type="text" name="isbn" class="form-control"
+                   value="{{ form.instance.isbn }}">
           </div>
           <div class="col-md-4">
             <label class="form-label fw-semibold">Ano de Publicação</label>
-            <input type="number" name="year" class="form-control" value="{{ form.instance.year }}" min="1000" max="2100">
+            <input type="number" name="year" class="form-control"
+                   value="{{ form.instance.year }}" min="1000" max="2100">
           </div>
           <div class="col-md-4">
             <label class="form-label fw-semibold">Total de Exemplares</label>
-            <input type="number" name="total_copies" class="form-control" value="{{ form.instance.total_copies|default:1 }}" min="1" required>
+            <input type="number" name="total_copies" class="form-control"
+                   value="{{ form.instance.total_copies|default:1 }}" min="1" required>
           </div>
           <div class="col-md-6">
             <label class="form-label fw-semibold">
@@ -45,31 +51,83 @@
             <div class="input-group">
               <span class="input-group-text">R$</span>
               <input type="number" name="rental_price" class="form-control"
-                     value="{{ form.instance.rental_price|default:'0.00' }}" min="0" step="0.01">
+                     value="{{ form.instance.rental_price|default:'0.00' }}"
+                     min="0" step="0.01">
             </div>
             <div class="form-text">Use 0 para empréstimo gratuito.</div>
           </div>
           <div class="col-12">
             <label class="form-label fw-semibold">Descrição *</label>
-            <textarea name="description" class="form-control" rows="5" required>{{ form.instance.description }}</textarea>
+            <textarea name="description" class="form-control" rows="5"
+                      required>{{ form.instance.description }}</textarea>
           </div>
+
+          <!-- Imagem da Capa -->
           <div class="col-12">
-            <label class="form-label fw-semibold">Imagem da Capa</label>
+            <label class="form-label fw-semibold">
+              <i class="bi bi-image me-1"></i>Imagem da Capa
+            </label>
+
             {% if form.instance.cover_image %}
-            <div class="mb-2">
-              <img src="{{ form.instance.cover_image.url }}" alt="Capa atual" style="height:120px;border-radius:8px;">
-              <small class="text-muted ms-2">Capa atual</small>
+            <div class="d-flex align-items-start gap-3 mb-2 p-3 bg-light rounded-3">
+              <img src="{{ form.instance.cover_image.url }}"
+                   alt="Capa atual"
+                   style="height:110px;width:75px;object-fit:cover;border-radius:6px;box-shadow:0 2px 8px rgba(0,0,0,.15);">
+              <div>
+                <p class="fw-semibold mb-1 small">Capa atual</p>
+                <p class="text-muted small mb-2">
+                  Selecione um novo arquivo abaixo para substituir,<br>
+                  ou marque a opção para remover a capa.
+                </p>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox"
+                         name="cover_image_clear" id="coverClear" value="1">
+                  <label class="form-check-label text-danger small fw-semibold" for="coverClear">
+                    <i class="bi bi-trash me-1"></i>Remover imagem atual
+                  </label>
+                </div>
+              </div>
             </div>
             {% endif %}
-            <input type="file" name="cover_image" class="form-control" accept="image/*">
+
+            <div id="uploadArea" class="border-2 border-dashed rounded-3 p-3 text-center position-relative"
+                 style="border: 2px dashed #dee2e6; cursor:pointer;"
+                 onclick="document.getElementById('coverInput').click()">
+              <i class="bi bi-cloud-upload fs-3 text-muted"></i>
+              <p class="text-muted small mb-0 mt-1">
+                Clique para selecionar ou arraste a imagem aqui<br>
+                <span class="text-muted" style="font-size:.75rem;">JPG, PNG, WEBP — máx. 5MB</span>
+              </p>
+              <p id="fileName" class="text-primary small fw-semibold mt-1 mb-0" style="display:none;"></p>
+            </div>
+            <input type="file" name="cover_image" id="coverInput"
+                   class="d-none" accept="image/jpeg,image/png,image/webp,image/gif">
+
+            <!-- Preview da nova imagem -->
+            <div id="previewContainer" class="mt-2 d-none">
+              <div class="d-flex align-items-center gap-3 p-2 bg-light rounded-3">
+                <img id="previewImg" src="" alt="Pré-visualização"
+                     style="height:90px;width:65px;object-fit:cover;border-radius:6px;">
+                <div>
+                  <p class="fw-semibold mb-0 small text-success">
+                    <i class="bi bi-check-circle me-1"></i>Nova imagem selecionada
+                  </p>
+                  <p id="previewName" class="text-muted small mb-0"></p>
+                  <button type="button" class="btn btn-link btn-sm text-danger p-0 mt-1"
+                          onclick="clearImage()">Cancelar seleção</button>
+                </div>
+              </div>
+            </div>
           </div>
+
           <div class="col-12">
             <label class="form-label fw-semibold">Categorias</label>
             <div class="row g-2">
               {% for cat in form.fields.categories.queryset %}
               <div class="col-md-3">
                 <div class="form-check">
-                  <input class="form-check-input" type="checkbox" name="categories" value="{{ cat.id }}"
+                  <input class="form-check-input" type="checkbox"
+                         name="categories" value="{{ cat.id }}"
                          id="cat{{ cat.id }}"
                          {% if cat in form.instance.categories.all %}checked{% endif %}>
                   <label class="form-check-label" for="cat{{ cat.id }}">{{ cat.name }}</label>
@@ -79,11 +137,20 @@
             </div>
           </div>
         </div>
+
         {% if form.errors %}
         <div class="alert alert-danger mt-3">
-          {% for field in form %}{% for error in field.errors %}<div>{{ field.label }}: {{ error }}</div>{% endfor %}{% endfor %}
+          {% for field in form %}
+            {% for error in field.errors %}
+              <div>{{ field.label }}: {{ error }}</div>
+            {% endfor %}
+          {% endfor %}
+          {% for error in form.non_field_errors %}
+            <div>{{ error }}</div>
+          {% endfor %}
         </div>
         {% endif %}
+
         <div class="d-flex gap-2 mt-4">
           <button type="submit" class="btn btn-primary px-4 fw-semibold">
             <i class="bi bi-check-circle me-2"></i>{{ action }}
@@ -95,4 +162,56 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const input    = document.getElementById('coverInput');
+const preview  = document.getElementById('previewContainer');
+const previewImg = document.getElementById('previewImg');
+const previewName = document.getElementById('previewName');
+const fileName = document.getElementById('fileName');
+const uploadArea = document.getElementById('uploadArea');
+const clearChk = document.getElementById('coverClear');
+
+input.addEventListener('change', function() {
+  const file = this.files[0];
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  previewImg.src = url;
+  previewName.textContent = file.name + ' (' + (file.size / 1024).toFixed(0) + ' KB)';
+  preview.classList.remove('d-none');
+  fileName.textContent = file.name;
+  fileName.style.display = 'block';
+  uploadArea.style.borderColor = '#198754';
+  if (clearChk) clearChk.checked = false;
+});
+
+// Drag and drop
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.style.borderColor = '#0d6efd'; });
+uploadArea.addEventListener('dragleave', () => { uploadArea.style.borderColor = '#dee2e6'; });
+uploadArea.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadArea.style.borderColor = '#dee2e6';
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) {
+    const dt = new DataTransfer();
+    dt.items.add(file);
+    input.files = dt.files;
+    input.dispatchEvent(new Event('change'));
+  }
+});
+
+function clearImage() {
+  input.value = '';
+  preview.classList.add('d-none');
+  fileName.style.display = 'none';
+  uploadArea.style.borderColor = '#dee2e6';
+}
+
+// Se marcar "remover", limpa seleção nova também
+if (clearChk) {
+  clearChk.addEventListener('change', () => { if (clearChk.checked) clearImage(); });
+}
+</script>
 {% endblock %}

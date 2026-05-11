@@ -52,7 +52,7 @@ class Book(models.Model):
     publisher = models.CharField('Editora', max_length=200, blank=True)
     year = models.PositiveIntegerField('Ano de Publicação', null=True, blank=True)
     description = models.TextField('Descrição')
-    cover_image = models.ImageField('Capa', upload_to='books/', blank=True, null=True)
+    cover_image = models.ImageField('Capa', upload_to='livros/', blank=True, null=True)
     categories = models.ManyToManyField(Category, blank=True, verbose_name='Categorias')
     total_copies = models.PositiveIntegerField('Total de Exemplares', default=1)
     available_copies = models.PositiveIntegerField('Exemplares Disponíveis', default=1)
