@@ -6,6 +6,7 @@ urlpatterns = [
     path('auth/login/', api_views.LoginAPIView.as_view(), name='api_login'),
     path('auth/logout/', api_views.LogoutAPIView.as_view(), name='api_logout'),
     path('auth/token/', api_views.GetTokenAPIView.as_view(), name='api_token'),
+    path('auth/token/regenerate/', api_views.RegenerateTokenAPIView.as_view(), name='api_token_regenerate'),
     path('users/', api_views.UserListAPIView.as_view(), name='api_user_list'),
     path('users/<int:pk>/', api_views.UserDetailAPIView.as_view(), name='api_user_detail'),
     path('users/me/', api_views.MeAPIView.as_view(), name='api_me'),

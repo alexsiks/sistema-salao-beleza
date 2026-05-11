@@ -1,5 +1,8 @@
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
+from django.shortcuts import render
+from django.views import View
+from django.contrib.auth.mixins import LoginRequiredMixin
 from rest_framework import generics, status, permissions
 from rest_framework.authtoken.models import Token
 from rest_framework.response import Response
@@ -107,3 +110,26 @@ class ActionLogAPIView(generics.ListAPIView):
         if action:
             qs = qs.filter(action=action)
         return qs
+
+
+class RegenerateTokenAPIView(APIView):
+    def post(self, request):
+        request.user.auth_token.delete()
+        token = Token.objects.create(user=request.user)
+        ActionLog.log(
+            user=request.user,
+            action='TOKEN_REGENERATE',
+            description=f'Token regenerado via API: {request.user.username}',
+            request=request,
+        )
+        return Response({'token': token.key, 'message': 'Token regenerado com sucesso.'})
+
+
+class ApiDocsView(View):
+    def get(self, request):
+        token = ''
+        if request.user.is_authenticated:
+            t, _ = Token.objects.get_or_create(user=request.user)
+            token = t.key
+        base_url = request.build_absolute_uri('/').rstrip('/')
+        return render(request, 'api_docs.html', {'token': token, 'base_url': base_url})

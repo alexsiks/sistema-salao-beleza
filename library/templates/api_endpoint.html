@@ -1,0 +1,70 @@
+{% with method_color=method|lower %}
+<div class="card mb-3 shadow-sm border-0" style="border-left: 4px solid {% if method == 'GET' %}#0d6efd{% elif method == 'POST' %}#198754{% elif method == 'DELETE' %}#dc3545{% else %}#fd7e14{% endif %} !important;">
+  <div class="card-body pb-2">
+    <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+      <span class="badge fs-6 fw-bold px-3 py-1
+        {% if method == 'GET' %}bg-primary
+        {% elif method == 'POST' %}bg-success
+        {% elif method == 'DELETE' %}bg-danger
+        {% elif method == 'PATCH' %}bg-warning text-dark
+        {% else %}bg-secondary{% endif %}">{{ method }}</span>
+      <code class="fs-6 text-dark fw-semibold">{{ path }}</code>
+      <span class="ms-auto badge
+        {% if 'Admin' in auth %}bg-danger
+        {% elif auth == 'Público' %}bg-secondary
+        {% else %}bg-info text-dark{% endif %} rounded-pill">{{ auth }}</span>
+    </div>
+    <p class="mb-2 text-muted small">{{ description }}</p>
+
+    {% if request_body %}
+    <div class="mb-2">
+      <button class="btn btn-outline-secondary btn-sm py-0 px-2" type="button"
+              data-bs-toggle="collapse" data-bs-target="#req-{{ path|slugify }}-{{ method }}"
+              aria-expanded="false">
+        <small>📤 Corpo da requisição</small>
+      </button>
+      <div class="collapse mt-1" id="req-{{ path|slugify }}-{{ method }}">
+        <pre class="code-block mb-0" style="font-size: 0.78rem;">{{ request_body }}</pre>
+      </div>
+    </div>
+    {% endif %}
+
+    {% if response_body %}
+    <div class="mb-1">
+      <button class="btn btn-outline-secondary btn-sm py-0 px-2" type="button"
+              data-bs-toggle="collapse" data-bs-target="#res-{{ path|slugify }}-{{ method }}"
+              aria-expanded="false">
+        <small>📥 Exemplo de resposta</small>
+      </button>
+      <div class="collapse mt-1" id="res-{{ path|slugify }}-{{ method }}">
+        <pre class="code-block mb-0" style="font-size: 0.78rem;">{{ response_body }}</pre>
+      </div>
+    </div>
+    {% endif %}
+
+    <div class="mt-2">
+      <button class="btn btn-outline-primary btn-sm py-0 px-2"
+              onclick="fillTester('{{ method }}', '{{ path }}', {{ request_body|default:'null'|escapejs }})">
+        <small>⚡ Testar</small>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+function fillTester(method, path, body) {
+  document.getElementById('tester-method').value = method;
+  document.getElementById('tester-url').value = path;
+  if (body && body !== 'null') {
+    try {
+      document.getElementById('tester-body').value = JSON.stringify(JSON.parse(body), null, 2);
+    } catch {
+      document.getElementById('tester-body').value = body;
+    }
+  } else {
+    document.getElementById('tester-body').value = '';
+  }
+  document.getElementById('section-tester').scrollIntoView({ behavior: 'smooth' });
+}
+</script>
+{% endwith %}
