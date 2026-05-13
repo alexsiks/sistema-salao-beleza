@@ -4,8 +4,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
 from django.db.models import Q
-from .models import Service, ServiceCategory, Professional, Appointment, SalonConfig
-from .forms import ServiceForm, SalonConfigForm, AppointmentBookingForm
+from .models import Service, ServiceCategory, Professional, Appointment, SalonConfig, ClosedDate, WEEKDAY_CHOICES
+from .forms import ServiceForm, SalonConfigForm, AppointmentBookingForm, ClosedDateForm
 from accounts.models import ActionLog
 
 
@@ -56,6 +56,11 @@ def book_appointment(request, pk):
             return redirect('books:book', pk=pk)
 
         appt_date = datetime.strptime(appt_date_str, '%Y-%m-%d').date()
+
+        if not config.is_open_on(appt_date):
+            messages.error(request, 'O salão não funciona nesta data.')
+            return redirect('books:book', pk=pk)
+
         start_time = datetime.strptime(start_time_str, '%H:%M').time()
         end_dt = datetime.combine(appt_date, start_time) + timedelta(minutes=service.duration_minutes)
         end_time = end_dt.time()
@@ -64,18 +69,15 @@ def book_appointment(request, pk):
         if professional_id:
             professional = get_object_or_404(Professional, pk=professional_id, is_active=True)
         else:
-            # Auto-assign first available professional
             profs = service.professionals.filter(is_active=True)
-            slots_config = config
             for p in profs:
-                slots = slots_config.available_slots(appt_date, p, service.duration_minutes)
+                slots = config.available_slots(appt_date, p, service.duration_minutes)
                 if start_time in slots:
                     professional = p
                     break
             if not professional and profs.exists():
                 professional = profs.first()
 
-        # Conflict check
         if professional:
             conflict = Appointment.objects.filter(
                 professional=professional,
@@ -105,7 +107,6 @@ def book_appointment(request, pk):
         messages.success(request, f'Agendamento de "{service.name}" realizado com sucesso!')
         return redirect('books:my_appointments')
 
-    # GET — show booking form
     professionals = service.professionals.filter(is_active=True)
     max_date = date.today() + timedelta(days=config.max_advance_days)
     return render(request, 'books/book.html', {
@@ -118,7 +119,7 @@ def book_appointment(request, pk):
 
 
 def available_slots_api(request):
-    """AJAX endpoint: retorna horários disponíveis."""
+    """AJAX endpoint: returns available time slots."""
     service_id = request.GET.get('service')
     professional_id = request.GET.get('professional')
     date_str = request.GET.get('date')
@@ -134,12 +135,15 @@ def available_slots_api(request):
     if appt_date < date.today():
         return JsonResponse({'slots': []})
 
+    config = SalonConfig.get()
+
+    if not config.is_open_on(appt_date):
+        return JsonResponse({'slots': [], 'closed': True, 'message': 'O salão não funciona nesta data.'})
+
     try:
         service = Service.objects.get(pk=service_id, is_active=True)
     except Service.DoesNotExist:
         return JsonResponse({'slots': [], 'error': 'Serviço não encontrado'})
-
-    config = SalonConfig.get()
 
     if professional_id:
         try:
@@ -148,7 +152,6 @@ def available_slots_api(request):
             return JsonResponse({'slots': []})
         slots = config.available_slots(appt_date, professional, service.duration_minutes)
     else:
-        # Merge slots from all professionals
         profs = service.professionals.filter(is_active=True)
         all_slots = set()
         for p in profs:
@@ -175,7 +178,7 @@ def my_appointments(request):
 
     config = SalonConfig.get()
     return render(request, 'books/my_appointments.html', {
-        'upcoming': upcoming,
+        'upcoming': [a for a in upcoming if True],
         'past': past,
         'config': config,
     })
@@ -316,12 +319,13 @@ def service_create(request):
     if not request.user.is_staff:
         messages.error(request, 'Acesso não autorizado.')
         return redirect('books:list')
+    config = SalonConfig.get()
     form = ServiceForm(request.POST or None, request.FILES or None)
     if request.method == 'POST' and form.is_valid():
         service = form.save()
         messages.success(request, f'Serviço "{service.name}" cadastrado!')
         return redirect('books:list')
-    return render(request, 'books/service_form.html', {'form': form, 'action': 'Cadastrar'})
+    return render(request, 'books/service_form.html', {'form': form, 'action': 'Cadastrar', 'config': config})
 
 
 @login_required
@@ -330,6 +334,7 @@ def service_edit(request, pk):
         messages.error(request, 'Acesso não autorizado.')
         return redirect('books:list')
     service = get_object_or_404(Service, pk=pk)
+    config = SalonConfig.get()
     form = ServiceForm(request.POST or None, request.FILES or None, instance=service)
     if request.method == 'POST' and form.is_valid():
         instance = form.save(commit=False)
@@ -341,7 +346,7 @@ def service_edit(request, pk):
         messages.success(request, f'Serviço "{service.name}" atualizado!')
         return redirect('books:list')
     return render(request, 'books/service_form.html',
-                  {'form': form, 'service': service, 'action': 'Editar'})
+                  {'form': form, 'service': service, 'action': 'Editar', 'config': config})
 
 
 @login_required
@@ -365,7 +370,8 @@ def professionals_list(request):
         return redirect('books:list')
     professionals = Professional.objects.filter(
         is_active=True).select_related('user').prefetch_related('services')
-    return render(request, 'books/professionals.html', {'professionals': professionals})
+    config = SalonConfig.get()
+    return render(request, 'books/professionals.html', {'professionals': professionals, 'config': config})
 
 
 @login_required
@@ -375,8 +381,32 @@ def salon_config(request):
         return redirect('books:list')
     config = SalonConfig.get()
     form = SalonConfigForm(request.POST or None, instance=config)
-    if request.method == 'POST' and form.is_valid():
-        form.save()
-        messages.success(request, 'Configurações salvas!')
-        return redirect('books:salon_config')
-    return render(request, 'books/library_config.html', {'form': form, 'config': config})
+    closed_form = ClosedDateForm()
+    closed_dates = ClosedDate.objects.all()
+
+    if request.method == 'POST':
+        action = request.POST.get('_action', 'config')
+        if action == 'add_closed':
+            closed_form = ClosedDateForm(request.POST)
+            if closed_form.is_valid():
+                closed_form.save()
+                messages.success(request, 'Data fechada adicionada.')
+                return redirect('books:salon_config')
+        elif action == 'delete_closed':
+            cd_pk = request.POST.get('closed_date_id')
+            ClosedDate.objects.filter(pk=cd_pk).delete()
+            messages.success(request, 'Data removida.')
+            return redirect('books:salon_config')
+        else:
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Configurações salvas!')
+                return redirect('books:salon_config')
+
+    return render(request, 'books/library_config.html', {
+        'form': form,
+        'config': config,
+        'closed_form': closed_form,
+        'closed_dates': closed_dates,
+        'weekday_choices': WEEKDAY_CHOICES,
+    })

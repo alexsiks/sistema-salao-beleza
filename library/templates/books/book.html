@@ -141,7 +141,13 @@ function loadSlots() {
     .then(r => r.json())
     .then(data => {
       loadingSlots.style.display = 'none';
+      if (data.closed) {
+        noSlots.innerHTML = '<i class="bi bi-calendar-x mr-2"></i>' + (data.message || 'O salão não funciona nesta data.');
+        noSlots.style.display = 'block';
+        return;
+      }
       if (!data.slots || data.slots.length === 0) {
+        noSlots.innerHTML = '<i class="bi bi-exclamation-triangle mr-2"></i>Nenhum horário disponível para esta data. Tente outro dia.';
         noSlots.style.display = 'block';
         return;
       }

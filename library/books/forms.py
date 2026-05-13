@@ -1,6 +1,6 @@
 from django import forms
 from django.contrib.auth.models import User
-from .models import Service, ServiceCategory, Professional, Appointment, SalonConfig
+from .models import Service, ServiceCategory, Professional, Appointment, SalonConfig, ClosedDate, WEEKDAY_CHOICES
 
 
 class ServiceForm(forms.ModelForm):
@@ -75,6 +75,13 @@ class AppointmentBookingForm(forms.ModelForm):
 
 
 class SalonConfigForm(forms.ModelForm):
+    working_days_list = forms.MultipleChoiceField(
+        label='Dias de Funcionamento',
+        choices=WEEKDAY_CHOICES,
+        widget=forms.CheckboxSelectMultiple,
+        required=True,
+    )
+
     class Meta:
         model = SalonConfig
         fields = ['salon_name', 'phone', 'address',
@@ -84,4 +91,27 @@ class SalonConfigForm(forms.ModelForm):
             'address': forms.Textarea(attrs={'rows': 2}),
             'open_time': forms.TimeInput(attrs={'type': 'time'}),
             'close_time': forms.TimeInput(attrs={'type': 'time'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            self.fields['working_days_list'].initial = self.instance.get_working_days()
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        days = self.cleaned_data.get('working_days_list', [])
+        instance.working_days = ','.join(str(d) for d in sorted(int(d) for d in days))
+        if commit:
+            instance.save()
+        return instance
+
+
+class ClosedDateForm(forms.ModelForm):
+    class Meta:
+        model = ClosedDate
+        fields = ['date', 'description']
+        widgets = {
+            'date': forms.DateInput(attrs={'type': 'date'}),
+            'description': forms.TextInput(attrs={'placeholder': 'Ex: Feriado Nacional, Recesso...'}),
         }
