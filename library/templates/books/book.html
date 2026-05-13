@@ -1,33 +1,33 @@
 {% extends 'base.html' %}
 {% block title %}Agendar {{ service.name }} — {{ config.salon_name }}{% endblock %}
-
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-lg-8">
-    <a href="{% url 'books:detail' service.pk %}" class="btn btn-sm btn-outline-secondary mb-4">
-      <i class="bi bi-arrow-left me-1"></i>Voltar
+<div class="flex justify-center">
+  <div class="w-full max-w-2xl">
+    <a href="{% url 'books:detail' service.pk %}" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary mb-5 transition">
+      <i class="bi bi-arrow-left"></i> Voltar
     </a>
 
-    <div class="d-flex align-items-center gap-3 mb-4">
-      <div class="p-3 rounded-3" style="background:var(--salon-light);">
-        <i class="bi bi-calendar-plus fs-3" style="color:var(--salon-primary)"></i>
+    <div class="flex items-center gap-4 mb-6">
+      <div class="p-3 rounded-xl bg-pink-100">
+        <i class="bi bi-calendar-plus text-primary text-2xl"></i>
       </div>
       <div>
-        <h2 class="fw-bold mb-0">Agendar Serviço</h2>
-        <p class="text-muted mb-0">{{ service.name }} · {{ service.duration_display }} · R$ {{ service.price }}</p>
+        <h2 class="text-2xl font-bold text-gray-800">Agendar Serviço</h2>
+        <p class="text-gray-500 text-sm">{{ service.name }} · {{ service.duration_display }} · R$ {{ service.price }}</p>
       </div>
     </div>
 
-    <div class="card p-4">
+    <div class="bg-white rounded-2xl shadow-sm p-6 space-y-6">
       <form method="post" id="bookingForm">
         {% csrf_token %}
 
         <!-- Profissional -->
-        <div class="mb-4">
-          <label class="form-label fw-semibold">
-            <i class="bi bi-person me-1" style="color:var(--salon-primary)"></i>Profissional
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            <i class="bi bi-person text-primary mr-1"></i> Profissional
           </label>
-          <select name="professional" id="professionalSelect" class="form-select form-select-lg">
+          <select name="professional" id="professionalSelect"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary">
             <option value="">Sem preferência (qualquer profissional)</option>
             {% for prof in professionals %}
             <option value="{{ prof.pk }}">{{ prof.full_name }}</option>
@@ -36,54 +36,58 @@
         </div>
 
         <!-- Data -->
-        <div class="mb-4">
-          <label class="form-label fw-semibold">
-            <i class="bi bi-calendar3 me-1" style="color:var(--salon-primary)"></i>Data
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            <i class="bi bi-calendar3 text-primary mr-1"></i> Data
           </label>
-          <input type="date" name="date" id="dateInput" class="form-control form-control-lg"
-                 min="{{ min_date }}" max="{{ max_date }}" required>
+          <input type="date" name="date" id="dateInput"
+                 min="{{ min_date }}" max="{{ max_date }}" required
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary">
         </div>
 
-        <!-- Horários disponíveis -->
-        <div class="mb-4" id="slotsSection" style="display:none;">
-          <label class="form-label fw-semibold">
-            <i class="bi bi-clock me-1" style="color:var(--salon-primary)"></i>Horário
+        <!-- Horários -->
+        <div id="slotsSection" style="display:none;">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            <i class="bi bi-clock text-primary mr-1"></i> Horário
           </label>
           <input type="hidden" name="start_time" id="selectedTime">
-          <div id="slotsContainer" class="d-flex flex-wrap gap-2 mt-2"></div>
-          <div id="noSlots" class="alert alert-warning mt-2" style="display:none;">
-            <i class="bi bi-exclamation-triangle me-2"></i>
+          <div id="slotsContainer" class="flex flex-wrap gap-2 mt-1"></div>
+          <div id="noSlots" class="bg-yellow-50 border border-yellow-200 text-yellow-700 rounded-lg px-4 py-3 text-sm mt-2" style="display:none;">
+            <i class="bi bi-exclamation-triangle mr-2"></i>
             Nenhum horário disponível para esta data. Tente outro dia.
           </div>
-          <div id="loadingSlots" class="text-muted small mt-2" style="display:none;">
-            <i class="bi bi-arrow-clockwise me-1"></i>Carregando horários...
+          <div id="loadingSlots" class="text-gray-400 text-sm mt-2" style="display:none;">
+            <i class="bi bi-arrow-clockwise mr-1"></i> Carregando horários...
           </div>
         </div>
 
         <!-- Observações -->
-        <div class="mb-4" id="notesSection" style="display:none;">
-          <label class="form-label fw-semibold">
-            <i class="bi bi-chat me-1" style="color:var(--salon-primary)"></i>Observações <span class="text-muted fw-normal">(opcional)</span>
+        <div id="notesSection" style="display:none;">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            <i class="bi bi-chat text-primary mr-1"></i> Observações <span class="text-gray-400 font-normal">(opcional)</span>
           </label>
-          <textarea name="notes" class="form-control" rows="3"
-                    placeholder="Ex: cabelo muito longo, alergia a produtos com amônia..."></textarea>
+          <textarea name="notes" rows="3"
+                    placeholder="Ex: cabelo muito longo, alergia a produtos com amônia..."
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary resize-none"></textarea>
         </div>
 
-        <!-- Resumo e Confirmar -->
+        <!-- Resumo -->
         <div id="confirmSection" style="display:none;">
-          <div class="card p-3 mb-3" style="background:var(--salon-light);border:none;">
-            <h6 class="fw-bold mb-2"><i class="bi bi-check2-circle me-1"></i>Resumo do Agendamento</h6>
-            <div class="row g-1 small">
-              <div class="col-6"><span class="text-muted">Serviço:</span> <strong>{{ service.name }}</strong></div>
-              <div class="col-6"><span class="text-muted">Duração:</span> <strong>{{ service.duration_display }}</strong></div>
-              <div class="col-6"><span class="text-muted">Valor:</span> <strong>R$ {{ service.price }}</strong></div>
-              <div class="col-6"><span class="text-muted">Data:</span> <strong id="summaryDate">—</strong></div>
-              <div class="col-6"><span class="text-muted">Horário:</span> <strong id="summaryTime">—</strong></div>
-              <div class="col-6"><span class="text-muted">Profissional:</span> <strong id="summaryProf">—</strong></div>
+          <div class="bg-pink-50 rounded-xl p-4 mb-4">
+            <h6 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+              <i class="bi bi-check2-circle text-primary"></i> Resumo do Agendamento
+            </h6>
+            <div class="grid grid-cols-2 gap-y-1 text-sm">
+              <div><span class="text-gray-500">Serviço:</span> <strong>{{ service.name }}</strong></div>
+              <div><span class="text-gray-500">Duração:</span> <strong>{{ service.duration_display }}</strong></div>
+              <div><span class="text-gray-500">Valor:</span> <strong>R$ {{ service.price }}</strong></div>
+              <div><span class="text-gray-500">Data:</span> <strong id="summaryDate">—</strong></div>
+              <div><span class="text-gray-500">Horário:</span> <strong id="summaryTime">—</strong></div>
+              <div><span class="text-gray-500">Profissional:</span> <strong id="summaryProf">—</strong></div>
             </div>
           </div>
-          <button type="submit" class="btn btn-salon btn-lg w-100 fw-bold" id="submitBtn" disabled>
-            <i class="bi bi-calendar-check me-2"></i>Confirmar Agendamento
+          <button type="submit" class="w-full bg-primary text-white font-bold py-3 rounded-lg hover:bg-primary-dark transition flex items-center justify-center gap-2" id="submitBtn" disabled>
+            <i class="bi bi-calendar-check"></i> Confirmar Agendamento
           </button>
         </div>
       </form>
@@ -115,7 +119,6 @@ profOptions["{{ prof.pk }}"] = "{{ prof.full_name }}";
 
 function formatDate(d) {
   const [y, m, day] = d.split('-');
-  const months = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   return `${day}/${m}/${y}`;
 }
 
@@ -133,7 +136,7 @@ function loadSlots() {
   notesSection.style.display = 'none';
   confirmSection.style.display = 'none';
 
-  const url = `/horarios-disponiveis/?service={{ service.pk }}&date=${d}${profId ? '&professional=' + profId : ''}`;
+  const url = `/api/available-slots/?service={{ service.pk }}&date=${d}${profId ? '&professional=' + profId : ''}`;
   fetch(url)
     .then(r => r.json())
     .then(data => {
@@ -145,7 +148,7 @@ function loadSlots() {
       data.slots.forEach(slot => {
         const btn = document.createElement('button');
         btn.type = 'button';
-        btn.className = 'time-slot-btn';
+        btn.className = 'time-slot-btn border-2 border-primary text-primary bg-white rounded-lg px-3 py-1.5 text-sm font-semibold cursor-pointer hover:bg-primary hover:text-white transition';
         btn.textContent = slot;
         btn.addEventListener('click', () => selectSlot(slot, btn));
         slotsContainer.appendChild(btn);

@@ -1,55 +1,61 @@
-{% with method_color=method|lower %}
-<div class="card mb-3 shadow-sm border-0" style="border-left: 4px solid {% if method == 'GET' %}#0d6efd{% elif method == 'POST' %}#198754{% elif method == 'DELETE' %}#dc3545{% else %}#fd7e14{% endif %} !important;">
-  <div class="card-body pb-2">
-    <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
-      <span class="badge fs-6 fw-bold px-3 py-1
-        {% if method == 'GET' %}bg-primary
-        {% elif method == 'POST' %}bg-success
-        {% elif method == 'DELETE' %}bg-danger
-        {% elif method == 'PATCH' %}bg-warning text-dark
-        {% else %}bg-secondary{% endif %}">{{ method }}</span>
-      <code class="fs-6 text-dark fw-semibold">{{ path }}</code>
-      <span class="ms-auto badge
-        {% if 'Admin' in auth %}bg-danger
-        {% elif auth == 'Público' %}bg-secondary
-        {% else %}bg-info text-dark{% endif %} rounded-pill">{{ auth }}</span>
+{% with method_lower=method|lower %}
+<div x-data="{ reqOpen: false, resOpen: false }"
+     class="bg-white rounded-xl shadow-sm mb-3 overflow-hidden border-l-4
+       {% if method == 'GET' %}border-blue-500
+       {% elif method == 'POST' %}border-green-500
+       {% elif method == 'DELETE' %}border-red-500
+       {% else %}border-orange-400{% endif %}">
+  <div class="p-4">
+    <div class="flex flex-wrap items-center gap-2 mb-2">
+      <span class="text-xs font-bold px-2.5 py-1 rounded-md
+        {% if method == 'GET' %}bg-blue-500 text-white
+        {% elif method == 'POST' %}bg-green-500 text-white
+        {% elif method == 'DELETE' %}bg-red-500 text-white
+        {% elif method == 'PATCH' %}bg-orange-400 text-white
+        {% else %}bg-gray-400 text-white{% endif %}">{{ method }}</span>
+      <code class="text-sm font-bold text-gray-800">{{ path }}</code>
+      {% if auth %}
+      <span class="ml-auto text-xs font-semibold px-2.5 py-0.5 rounded-full
+        {% if admin %}bg-red-100 text-red-600{% else %}bg-sky-100 text-sky-600{% endif %}">
+        {% if admin %}Admin{% else %}Auth{% endif %}
+      </span>
+      {% endif %}
     </div>
-    <p class="mb-2 text-muted small">{{ description }}</p>
+    <p class="text-sm text-gray-500 mb-3">{{ description }}</p>
 
-    {% if request_body %}
-    <div class="mb-2">
-      <button class="btn btn-outline-secondary btn-sm py-0 px-2" type="button"
-              data-bs-toggle="collapse" data-bs-target="#req-{{ path|slugify }}-{{ method }}"
-              aria-expanded="false">
-        <small>📤 Corpo da requisição</small>
+    <div class="flex flex-wrap gap-2">
+      {% if request_example %}
+      <button @click="reqOpen = !reqOpen" type="button"
+              class="text-xs border border-gray-300 text-gray-600 px-3 py-1 rounded-lg hover:bg-gray-50 transition">
+        📤 Corpo da requisição
       </button>
-      <div class="collapse mt-1" id="req-{{ path|slugify }}-{{ method }}">
-        <pre class="code-block mb-0" style="font-size: 0.78rem;">{{ request_body }}</pre>
-      </div>
+      {% endif %}
+      {% if response_example %}
+      <button @click="resOpen = !resOpen" type="button"
+              class="text-xs border border-gray-300 text-gray-600 px-3 py-1 rounded-lg hover:bg-gray-50 transition">
+        📥 Exemplo de resposta
+      </button>
+      {% endif %}
+      <button type="button"
+              onclick="fillTester('{{ method }}', '{{ path }}', {{ request_example|default:'null'|escapejs }})"
+              class="text-xs border border-blue-300 text-blue-600 px-3 py-1 rounded-lg hover:bg-blue-50 transition">
+        ⚡ Testar
+      </button>
+    </div>
+
+    {% if request_example %}
+    <div x-show="reqOpen" x-cloak x-transition class="mt-3">
+      <pre class="code-block text-xs">{{ request_example }}</pre>
     </div>
     {% endif %}
-
-    {% if response_body %}
-    <div class="mb-1">
-      <button class="btn btn-outline-secondary btn-sm py-0 px-2" type="button"
-              data-bs-toggle="collapse" data-bs-target="#res-{{ path|slugify }}-{{ method }}"
-              aria-expanded="false">
-        <small>📥 Exemplo de resposta</small>
-      </button>
-      <div class="collapse mt-1" id="res-{{ path|slugify }}-{{ method }}">
-        <pre class="code-block mb-0" style="font-size: 0.78rem;">{{ response_body }}</pre>
-      </div>
+    {% if response_example %}
+    <div x-show="resOpen" x-cloak x-transition class="mt-3">
+      <pre class="code-block text-xs">{{ response_example }}</pre>
     </div>
     {% endif %}
-
-    <div class="mt-2">
-      <button class="btn btn-outline-primary btn-sm py-0 px-2"
-              onclick="fillTester('{{ method }}', '{{ path }}', {{ request_body|default:'null'|escapejs }})">
-        <small>⚡ Testar</small>
-      </button>
-    </div>
   </div>
 </div>
+{% endwith %}
 
 <script>
 function fillTester(method, path, body) {
@@ -67,4 +73,3 @@ function fillTester(method, path, body) {
   document.getElementById('section-tester').scrollIntoView({ behavior: 'smooth' });
 }
 </script>
-{% endwith %}

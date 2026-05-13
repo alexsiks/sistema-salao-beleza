@@ -1,25 +1,25 @@
 {% extends 'base.html' %}
 {% block title %}Desativar Serviço — {{ service.name }}{% endblock %}
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-md-6">
-    <div class="card p-4 text-center">
-      <div class="mb-3">
-        <i class="bi bi-exclamation-triangle-fill display-4 text-warning"></i>
+<div class="flex justify-center">
+  <div class="w-full max-w-md">
+    <div class="bg-white rounded-2xl shadow-sm p-8 text-center">
+      <div class="mb-4">
+        <i class="bi bi-exclamation-triangle-fill text-yellow-400" style="font-size:3.5rem;"></i>
       </div>
-      <h4 class="fw-bold mb-2">Desativar Serviço</h4>
-      <p class="text-muted mb-4">
+      <h4 class="text-xl font-bold text-gray-800 mb-2">Desativar Serviço</h4>
+      <p class="text-gray-500 text-sm mb-6">
         Tem certeza que deseja desativar <strong>{{ service.name }}</strong>?
         O serviço não aparecerá mais para novos agendamentos.
       </p>
-      <div class="d-flex gap-3 justify-content-center">
+      <div class="flex gap-3 justify-center">
         <form method="post">
           {% csrf_token %}
-          <button type="submit" class="btn btn-danger px-4">
-            <i class="bi bi-eye-slash me-2"></i>Sim, Desativar
+          <button type="submit" class="bg-red-500 text-white font-semibold px-6 py-2.5 rounded-lg hover:bg-red-600 transition flex items-center gap-2">
+            <i class="bi bi-eye-slash"></i> Sim, Desativar
           </button>
         </form>
-        <a href="{% url 'books:list' %}" class="btn btn-outline-secondary px-4">Cancelar</a>
+        <a href="{% url 'books:list' %}" class="border border-gray-300 text-gray-600 font-semibold px-6 py-2.5 rounded-lg hover:bg-gray-50 transition">Cancelar</a>
       </div>
     </div>
   </div>

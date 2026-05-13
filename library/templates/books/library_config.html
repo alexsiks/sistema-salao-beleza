@@ -1,66 +1,68 @@
 {% extends 'base.html' %}
 {% block title %}Configurações — {{ config.salon_name }}{% endblock %}
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-lg-7">
-    <div class="d-flex align-items-center mb-4 gap-3">
-      <div class="p-3 rounded-3" style="background:var(--salon-light);">
-        <i class="bi bi-sliders fs-3" style="color:var(--salon-primary)"></i>
+<div class="flex justify-center">
+  <div class="w-full max-w-xl">
+    <div class="flex items-center gap-4 mb-6">
+      <div class="p-3 rounded-xl bg-pink-100">
+        <i class="bi bi-sliders text-primary text-2xl"></i>
       </div>
       <div>
-        <h2 class="fw-bold mb-0">Configurações do Salão</h2>
-        <p class="text-muted mb-0">Horários de funcionamento e regras de agendamento</p>
+        <h2 class="text-2xl font-bold text-gray-800">Configurações do Salão</h2>
+        <p class="text-gray-500 text-sm">Horários de funcionamento e regras de agendamento</p>
       </div>
     </div>
-    <div class="card p-4">
-      <form method="post">
+
+    <div class="bg-white rounded-2xl shadow-sm p-6">
+      <form method="post" class="space-y-4">
         {% csrf_token %}
-        <div class="row g-3">
-          <div class="col-12">
-            <label class="form-label fw-semibold">Nome do Salão</label>
-            {{ form.salon_name }}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Telefone / WhatsApp</label>
+
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Nome do Salão</label>
+          {{ form.salon_name }}
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">Telefone / WhatsApp</label>
             {{ form.phone }}
           </div>
-          <div class="col-12">
-            <label class="form-label fw-semibold">Endereço</label>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-semibold text-gray-700 mb-1">Endereço</label>
             {{ form.address }}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold"><i class="bi bi-sunrise me-1"></i>Abertura</label>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1"><i class="bi bi-sunrise mr-1"></i>Abertura</label>
             {{ form.open_time }}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold"><i class="bi bi-sunset me-1"></i>Fechamento</label>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1"><i class="bi bi-sunset mr-1"></i>Fechamento</label>
             {{ form.close_time }}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Intervalo entre horários (min)</label>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">Intervalo entre horários (min)</label>
             {{ form.slot_minutes }}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Máximo de dias para agendar</label>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">Máximo de dias para agendar</label>
             {{ form.max_advance_days }}
           </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Horas mínimas para cancelar</label>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">Horas mínimas para cancelar</label>
             {{ form.cancellation_hours }}
           </div>
         </div>
 
         {% for field in form %}
         {% if field.errors %}
-        <div class="alert alert-danger mt-3 py-2">{{ field.label }}: {{ field.errors }}</div>
+        <div class="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">{{ field.label }}: {{ field.errors }}</div>
         {% endif %}
         {% endfor %}
 
-        <div class="d-flex gap-2 mt-4">
-          <button type="submit" class="btn btn-salon px-4 fw-semibold">
-            <i class="bi bi-save me-2"></i>Salvar Configurações
+        <div class="flex gap-3 pt-2">
+          <button type="submit" class="bg-primary text-white font-semibold px-6 py-2.5 rounded-lg hover:bg-primary-dark transition flex items-center gap-2">
+            <i class="bi bi-save"></i> Salvar Configurações
           </button>
-          <a href="{% url 'books:list' %}" class="btn btn-outline-secondary">Cancelar</a>
+          <a href="{% url 'books:list' %}" class="border border-gray-300 text-gray-600 font-semibold px-6 py-2.5 rounded-lg hover:bg-gray-50 transition">Cancelar</a>
         </div>
       </form>
     </div>

@@ -2,40 +2,43 @@
 {% block title %}API REST — Documentação{% endblock %}
 
 {% block content %}
-<div class="row">
+<div class="flex gap-8">
   <!-- Sidebar -->
-  <div class="col-lg-3 d-none d-lg-block">
-    <div class="card p-3 sticky-top" style="top:80px;">
-      <div class="fw-bold mb-2" style="color:var(--salon-primary)">
-        <i class="bi bi-lightning-charge me-1"></i>Endpoints
+  <div class="hidden lg:block w-48 flex-shrink-0">
+    <div class="bg-white rounded-2xl shadow-sm p-4 sticky top-6">
+      <div class="font-bold text-primary mb-3 text-sm flex items-center gap-1">
+        <i class="bi bi-lightning-charge"></i> Endpoints
       </div>
-      <ul class="list-unstyled small mb-0">
-        <li><a href="#auth" class="text-decoration-none text-muted">Autenticação</a></li>
-        <li><a href="#config" class="text-decoration-none text-muted">Configuração</a></li>
-        <li><a href="#services" class="text-decoration-none text-muted">Serviços</a></li>
-        <li><a href="#professionals" class="text-decoration-none text-muted">Profissionais</a></li>
-        <li><a href="#slots" class="text-decoration-none text-muted">Horários</a></li>
-        <li><a href="#appointments" class="text-decoration-none text-muted">Agendamentos</a></li>
-        <li><a href="#financial" class="text-decoration-none text-muted">Financeiro</a></li>
-        <li><a href="#users" class="text-decoration-none text-muted">Usuários</a></li>
+      <ul class="space-y-1 text-sm">
+        <li><a href="#auth" class="text-gray-500 hover:text-primary transition block py-0.5">Autenticação</a></li>
+        <li><a href="#config" class="text-gray-500 hover:text-primary transition block py-0.5">Configuração</a></li>
+        <li><a href="#services" class="text-gray-500 hover:text-primary transition block py-0.5">Serviços</a></li>
+        <li><a href="#professionals" class="text-gray-500 hover:text-primary transition block py-0.5">Profissionais</a></li>
+        <li><a href="#slots" class="text-gray-500 hover:text-primary transition block py-0.5">Horários</a></li>
+        <li><a href="#appointments" class="text-gray-500 hover:text-primary transition block py-0.5">Agendamentos</a></li>
+        <li><a href="#financial" class="text-gray-500 hover:text-primary transition block py-0.5">Financeiro</a></li>
+        <li><a href="#users" class="text-gray-500 hover:text-primary transition block py-0.5">Usuários</a></li>
+        <li><a href="#section-tester" class="text-gray-500 hover:text-primary transition block py-0.5">Testador</a></li>
       </ul>
     </div>
   </div>
 
-  <div class="col-lg-9">
-    <div class="mb-4">
-      <h2 class="fw-bold"><i class="bi bi-lightning-charge me-2" style="color:var(--salon-accent)"></i>API REST — Salão de Beleza</h2>
-      <p class="text-muted">API completa para integração com o sistema de agendamento.</p>
-      <div class="card p-3" style="background:var(--salon-light);border:none;">
-        <strong>Base URL:</strong> <code>{{ request.build_absolute_uri('/') }}api/</code><br>
-        <strong>Autenticação:</strong> <code>Authorization: Token &lt;seu_token&gt;</code><br>
-        <strong>Formato:</strong> JSON
+  <div class="flex-1 min-w-0">
+    <div class="mb-6">
+      <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+        <i class="bi bi-lightning-charge text-accent"></i> API REST — Salão de Beleza
+      </h2>
+      <p class="text-gray-500 text-sm mt-1">API completa para integração com o sistema de agendamento.</p>
+      <div class="bg-pink-50 border border-pink-100 rounded-xl p-4 mt-3 text-sm space-y-1">
+        <div><strong>Base URL:</strong> <code class="bg-pink-100 px-1.5 py-0.5 rounded text-primary text-xs">{{ request.build_absolute_uri('/') }}api/</code></div>
+        <div><strong>Autenticação:</strong> <code class="bg-pink-100 px-1.5 py-0.5 rounded text-primary text-xs">Authorization: Token &lt;seu_token&gt;</code></div>
+        <div><strong>Formato:</strong> JSON</div>
       </div>
     </div>
 
     <!-- AUTH -->
-    <h4 id="auth" class="fw-bold mt-4 mb-3" style="color:var(--salon-primary)">
-      <i class="bi bi-shield-lock me-2"></i>Autenticação
+    <h4 id="auth" class="font-bold text-primary mt-6 mb-3 flex items-center gap-2">
+      <i class="bi bi-shield-lock"></i> Autenticação
     </h4>
     {% include 'api_endpoint.html' with method="POST" path="/api/auth/login/" description="Login — retorna token de autenticação" request_example='{"username": "ana_silva", "password": "prof123"}' response_example='{"token": "abc123...", "user_id": 2, "username": "ana_silva"}' %}
     {% include 'api_endpoint.html' with method="POST" path="/api/auth/register/" description="Cadastrar novo usuário" request_example='{"username": "cliente1", "password": "senha123", "email": "cliente@email.com", "first_name": "João"}' response_example='{"token": "...", "message": "Usuário criado com sucesso"}' %}
@@ -43,15 +46,15 @@
     {% include 'api_endpoint.html' with method="GET"  path="/api/auth/token/" description="Ver token atual do usuário autenticado" auth=True response_example='{"token": "abc123..."}' %}
 
     <!-- CONFIG -->
-    <h4 id="config" class="fw-bold mt-4 mb-3" style="color:var(--salon-primary)">
-      <i class="bi bi-sliders me-2"></i>Configuração do Salão
+    <h4 id="config" class="font-bold text-primary mt-6 mb-3 flex items-center gap-2">
+      <i class="bi bi-sliders"></i> Configuração do Salão
     </h4>
     {% include 'api_endpoint.html' with method="GET"   path="/api/config/" description="Ver configurações do salão (horário, intervalo, etc.)" auth=True response_example='{"salon_name": "Espaço Beleza", "open_time": "09:00:00", "close_time": "18:00:00", "slot_minutes": 30}' %}
     {% include 'api_endpoint.html' with method="PATCH" path="/api/config/" description="Atualizar configurações (admin)" auth=True admin=True request_example='{"open_time": "08:00", "close_time": "19:00"}' %}
 
     <!-- SERVICES -->
-    <h4 id="services" class="fw-bold mt-4 mb-3" style="color:var(--salon-primary)">
-      <i class="bi bi-scissors me-2"></i>Serviços
+    <h4 id="services" class="font-bold text-primary mt-6 mb-3 flex items-center gap-2">
+      <i class="bi bi-scissors"></i> Serviços
     </h4>
     {% include 'api_endpoint.html' with method="GET"  path="/api/services/" description="Listar serviços ativos (filtros: q, category, active=0/1)" auth=True response_example='[{"id":1,"name":"Corte Feminino","price":"80.00","duration_minutes":60,"duration_display":"1h"}]' %}
     {% include 'api_endpoint.html' with method="GET"  path="/api/services/<id>/" description="Detalhes de um serviço" auth=True %}
@@ -60,20 +63,20 @@
     {% include 'api_endpoint.html' with method="GET"  path="/api/categories/" description="Listar categorias de serviços" auth=True %}
 
     <!-- PROFESSIONALS -->
-    <h4 id="professionals" class="fw-bold mt-4 mb-3" style="color:var(--salon-primary)">
-      <i class="bi bi-people me-2"></i>Profissionais
+    <h4 id="professionals" class="font-bold text-primary mt-6 mb-3 flex items-center gap-2">
+      <i class="bi bi-people"></i> Profissionais
     </h4>
     {% include 'api_endpoint.html' with method="GET" path="/api/professionals/" description="Listar profissionais ativos (filtro: service=<id>)" auth=True response_example='[{"id":1,"full_name":"Ana Silva","bio":"...","services":[...]}]' %}
 
     <!-- SLOTS -->
-    <h4 id="slots" class="fw-bold mt-4 mb-3" style="color:var(--salon-primary)">
-      <i class="bi bi-clock me-2"></i>Horários Disponíveis
+    <h4 id="slots" class="font-bold text-primary mt-6 mb-3 flex items-center gap-2">
+      <i class="bi bi-clock"></i> Horários Disponíveis
     </h4>
     {% include 'api_endpoint.html' with method="GET" path="/api/available-slots/?service=1&date=2025-06-15" description="Horários disponíveis para um serviço e data. Parâmetro opcional: professional=<id>" auth=True response_example='{"date":"2025-06-15","service":"Corte Feminino","duration_minutes":60,"slots":["09:00","10:00","11:00","14:00"]}' %}
 
     <!-- APPOINTMENTS -->
-    <h4 id="appointments" class="fw-bold mt-4 mb-3" style="color:var(--salon-primary)">
-      <i class="bi bi-calendar-check me-2"></i>Agendamentos
+    <h4 id="appointments" class="font-bold text-primary mt-6 mb-3 flex items-center gap-2">
+      <i class="bi bi-calendar-check"></i> Agendamentos
     </h4>
     {% include 'api_endpoint.html' with method="GET"  path="/api/appointments/" description="Listar agendamentos (cliente vê os próprios; admin vê todos). Filtros: status, date, upcoming=1" auth=True %}
     {% include 'api_endpoint.html' with method="POST" path="/api/appointments/book/" description="Criar novo agendamento" auth=True request_example='{"service":1,"professional":2,"date":"2025-06-15","start_time":"09:00","notes":"Cabelo muito longo"}' response_example='{"id":1,"service_name":"Corte Feminino","date":"2025-06-15","start_time":"09:00:00","status":"PENDING"}' %}
@@ -83,20 +86,102 @@
     {% include 'api_endpoint.html' with method="POST" path="/api/appointments/<id>/complete/" description="Marcar serviço como concluído (admin)" auth=True admin=True %}
 
     <!-- FINANCIAL -->
-    <h4 id="financial" class="fw-bold mt-4 mb-3" style="color:var(--salon-primary)">
-      <i class="bi bi-graph-up me-2"></i>Financeiro (admin)
+    <h4 id="financial" class="font-bold text-primary mt-6 mb-3 flex items-center gap-2">
+      <i class="bi bi-graph-up"></i> Financeiro (admin)
     </h4>
     {% include 'api_endpoint.html' with method="GET" path="/api/financial/" description="Resumo financeiro e estatísticas de agendamentos" auth=True admin=True response_example='{"receita_total":"1250.00","agendamentos_hoje":5,"agendamentos_pendentes":3,"agendamentos_concluidos":42}' %}
 
     <!-- USERS -->
-    <h4 id="users" class="fw-bold mt-4 mb-3" style="color:var(--salon-primary)">
-      <i class="bi bi-person-lines-fill me-2"></i>Usuários
+    <h4 id="users" class="font-bold text-primary mt-6 mb-3 flex items-center gap-2">
+      <i class="bi bi-person-lines-fill"></i> Usuários
     </h4>
     {% include 'api_endpoint.html' with method="GET" path="/api/users/me/"           description="Ver perfil próprio"             auth=True %}
     {% include 'api_endpoint.html' with method="PUT" path="/api/users/me/profile/"   description="Atualizar perfil"               auth=True %}
     {% include 'api_endpoint.html' with method="GET" path="/api/users/"              description="Listar usuários (admin)"        auth=True admin=True %}
     {% include 'api_endpoint.html' with method="GET" path="/api/logs/"               description="Logs de ações (admin)"         auth=True admin=True %}
 
+    <!-- Testador -->
+    <div id="section-tester" class="mt-8">
+      <h4 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
+        <i class="bi bi-terminal text-accent"></i> Testador de API
+      </h4>
+      <div class="bg-white rounded-2xl shadow-sm p-5" x-data="apiTester()">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Método</label>
+            <select id="tester-method" x-model="method"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary">
+              <option>GET</option><option>POST</option><option>PUT</option><option>PATCH</option><option>DELETE</option>
+            </select>
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-xs font-semibold text-gray-600 mb-1">URL</label>
+            <input id="tester-url" x-model="url" type="text" placeholder="/api/auth/login/"
+                   class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary">
+          </div>
+        </div>
+        <div class="mb-3">
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Token (opcional)</label>
+          <input x-model="token" type="text" placeholder="Cole seu token aqui"
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary">
+        </div>
+        <div class="mb-3">
+          <label class="block text-xs font-semibold text-gray-600 mb-1">Corpo (JSON)</label>
+          <textarea id="tester-body" x-model="body" rows="4"
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary font-mono resize-none"
+                    placeholder='{"key": "value"}'></textarea>
+        </div>
+        <button @click="send()" type="button"
+                class="bg-primary text-white font-semibold px-5 py-2 rounded-lg hover:bg-primary-dark transition text-sm flex items-center gap-2">
+          <i class="bi bi-send"></i> Enviar
+        </button>
+        <template x-if="response">
+          <div class="mt-4">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-xs font-semibold text-gray-600">Resposta</span>
+              <span :class="status < 300 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-600'"
+                    class="text-xs font-bold px-2 py-0.5 rounded-full" x-text="status"></span>
+            </div>
+            <pre class="code-block text-xs overflow-auto max-h-64" x-text="response"></pre>
+          </div>
+        </template>
+      </div>
+    </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function apiTester() {
+  return {
+    method: 'GET',
+    url: '',
+    token: '',
+    body: '',
+    response: null,
+    status: null,
+    async send() {
+      const opts = { method: this.method, headers: { 'Content-Type': 'application/json' } };
+      if (this.token) opts.headers['Authorization'] = 'Token ' + this.token;
+      if (['POST','PUT','PATCH'].includes(this.method) && this.body) {
+        try { opts.body = this.body; } catch {}
+      }
+      try {
+        const r = await fetch(this.url, opts);
+        this.status = r.status;
+        const ct = r.headers.get('content-type') || '';
+        if (ct.includes('json')) {
+          this.response = JSON.stringify(await r.json(), null, 2);
+        } else {
+          this.response = await r.text();
+        }
+      } catch(e) {
+        this.status = 'Erro';
+        this.response = e.toString();
+      }
+    }
+  }
+}
+</script>
 {% endblock %}

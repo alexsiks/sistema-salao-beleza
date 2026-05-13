@@ -1,109 +1,118 @@
 {% extends 'base.html' %}
 {% block title %}Meu Perfil — Salão de Beleza{% endblock %}
 {% block content %}
-<div class="row justify-content-center">
-  <div class="col-lg-8">
-    <div class="d-flex align-items-center mb-4 gap-3">
-      <div class="rounded-circle d-flex align-items-center justify-content-center"
-           style="width:60px;height:60px;background:var(--salon-light);flex-shrink:0;">
-        <i class="bi bi-person-circle fs-2" style="color:var(--salon-primary)"></i>
+<div class="flex justify-center">
+  <div class="w-full max-w-2xl">
+    <div class="flex items-center gap-4 mb-6">
+      <div class="w-14 h-14 rounded-full bg-pink-100 flex items-center justify-center flex-shrink-0">
+        <i class="bi bi-person-circle text-primary text-2xl"></i>
       </div>
       <div>
-        <h2 class="fw-bold mb-0">Meu Perfil</h2>
-        <p class="text-muted mb-0">Atualize suas informações pessoais</p>
+        <h2 class="text-2xl font-bold text-gray-800">Meu Perfil</h2>
+        <p class="text-gray-500 text-sm">Atualize suas informações pessoais</p>
       </div>
     </div>
 
-    <div class="card p-4">
-      <form method="post" id="profileForm" novalidate>
+    <div class="bg-white rounded-2xl shadow-sm p-6 mb-5">
+      <form method="post" id="profileForm" novalidate class="space-y-5">
         {% csrf_token %}
 
-        <h5 class="fw-bold mb-3 border-bottom pb-2"><i class="bi bi-person me-2"></i>Dados Pessoais</h5>
-        <div class="row g-3 mb-4">
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Nome *</label>
-            <input type="text" name="first_name" class="form-control"
-                   value="{{ form.fields.first_name.initial }}" required>
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Sobrenome</label>
-            <input type="text" name="last_name" class="form-control"
-                   value="{{ form.fields.last_name.initial }}">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">E-mail</label>
-            <input type="email" name="email" class="form-control"
-                   value="{{ form.fields.email.initial }}" autocomplete="email">
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Telefone</label>
-            {{ form.phone }}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Data de Nascimento</label>
-            {{ form.birth_date }}
-          </div>
-          <div class="col-md-6">
-            <label class="form-label fw-semibold">Gênero</label>
-            {{ form.gender }}
+        <div>
+          <h5 class="font-bold text-gray-800 border-b border-gray-100 pb-2 mb-3 flex items-center gap-2">
+            <i class="bi bi-person text-primary"></i> Dados Pessoais
+          </h5>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Nome *</label>
+              <input type="text" name="first_name" value="{{ form.fields.first_name.initial }}" required
+                     class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Sobrenome</label>
+              <input type="text" name="last_name" value="{{ form.fields.last_name.initial }}"
+                     class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">E-mail</label>
+              <input type="email" name="email" value="{{ form.fields.email.initial }}" autocomplete="email"
+                     class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary">
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Telefone</label>
+              {{ form.phone }}
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Data de Nascimento</label>
+              {{ form.birth_date }}
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Gênero</label>
+              {{ form.gender }}
+            </div>
           </div>
         </div>
 
-        <h5 class="fw-bold mb-3 border-bottom pb-2"><i class="bi bi-geo-alt me-2"></i>Endereço</h5>
-        <div class="row g-3 mb-4">
-          <div class="col-md-4">
-            <label class="form-label fw-semibold">CEP</label>
-            <div class="input-group">
-              {{ form.cep }}
-              <button type="button" class="btn btn-outline-secondary" id="btnCep">
-                <i class="bi bi-search"></i>
-              </button>
+        <div>
+          <h5 class="font-bold text-gray-800 border-b border-gray-100 pb-2 mb-3 flex items-center gap-2">
+            <i class="bi bi-geo-alt text-primary"></i> Endereço
+          </h5>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">CEP</label>
+              <div class="flex gap-2">
+                {{ form.cep }}
+                <button type="button" id="btnCep"
+                        class="border border-gray-300 text-gray-600 px-3 rounded-lg hover:bg-gray-50 transition text-sm flex items-center">
+                  <i class="bi bi-search"></i>
+                </button>
+              </div>
+              <div id="cepStatus" class="text-xs text-gray-400 mt-1"></div>
             </div>
-            <div id="cepStatus" class="form-text"></div>
-          </div>
-          <div class="col-md-8">
-            <label class="form-label fw-semibold">Logradouro</label>
-            {{ form.logradouro }}
-          </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Número</label>
-            {{ form.numero }}
-          </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Complemento</label>
-            {{ form.complemento }}
-          </div>
-          <div class="col-md-3">
-            <label class="form-label fw-semibold">Bairro</label>
-            {{ form.bairro }}
-          </div>
-          <div class="col-md-2">
-            <label class="form-label fw-semibold">Cidade</label>
-            {{ form.cidade }}
-          </div>
-          <div class="col-md-1">
-            <label class="form-label fw-semibold">UF</label>
-            {{ form.estado }}
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Logradouro</label>
+              {{ form.logradouro }}
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Número</label>
+              {{ form.numero }}
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Complemento</label>
+              {{ form.complemento }}
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Bairro</label>
+              {{ form.bairro }}
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Cidade</label>
+              {{ form.cidade }}
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">UF</label>
+              {{ form.estado }}
+            </div>
           </div>
         </div>
 
         {% if form.errors %}
-        <div class="alert alert-danger mb-3">
+        <div class="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
           {% for f in form %}{% for e in f.errors %}<div>{{ f.label }}: {{ e }}</div>{% endfor %}{% endfor %}
         </div>
         {% endif %}
 
-        <button type="submit" class="btn btn-salon px-4 fw-semibold">
-          <i class="bi bi-save me-2"></i>Salvar Perfil
+        <button type="submit" class="bg-primary text-white font-semibold px-6 py-2.5 rounded-lg hover:bg-primary-dark transition flex items-center gap-2">
+          <i class="bi bi-save"></i> Salvar Perfil
         </button>
       </form>
     </div>
 
-    <!-- Token API -->
-    <div class="card p-4 mt-4">
-      <h5 class="fw-bold mb-3"><i class="bi bi-lightning-charge me-2" style="color:var(--salon-accent)"></i>Token de Acesso à API</h5>
-      <a href="{% url 'accounts:token' %}" class="btn btn-outline-secondary btn-sm">
-        <i class="bi bi-key me-1"></i>Gerenciar Token
+    <div class="bg-white rounded-2xl shadow-sm p-6">
+      <h5 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+        <i class="bi bi-lightning-charge text-accent"></i> Token de Acesso à API
+      </h5>
+      <a href="{% url 'accounts:token' %}" class="inline-flex items-center gap-2 border border-gray-300 text-gray-600 text-sm font-semibold px-4 py-2 rounded-lg hover:bg-gray-50 transition">
+        <i class="bi bi-key"></i> Gerenciar Token
       </a>
     </div>
   </div>
