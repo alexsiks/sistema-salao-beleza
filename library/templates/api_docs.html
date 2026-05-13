@@ -30,7 +30,7 @@
       </h2>
       <p class="text-gray-500 text-sm mt-1">API completa para integração com o sistema de agendamento.</p>
       <div class="bg-pink-50 border border-pink-100 rounded-xl p-4 mt-3 text-sm space-y-1">
-        <div><strong>Base URL:</strong> <code class="bg-pink-100 px-1.5 py-0.5 rounded text-primary text-xs">{{ request.build_absolute_uri('/') }}api/</code></div>
+        <div><strong>Base URL:</strong> <code class="bg-pink-100 px-1.5 py-0.5 rounded text-primary text-xs">{{ request.scheme }}://{{ request.get_host }}/api/</code></div>
         <div><strong>Autenticação:</strong> <code class="bg-pink-100 px-1.5 py-0.5 rounded text-primary text-xs">Authorization: Token &lt;seu_token&gt;</code></div>
         <div><strong>Formato:</strong> JSON</div>
       </div>
