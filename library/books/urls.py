@@ -21,6 +21,7 @@ urlpatterns = [
     path('agendamento/<int:pk>/nao-compareceu/', views.no_show_appointment, name='no_show'),
     path('profissionais/', views.professionals_list, name='professionals'),
     path('configuracoes/', views.salon_config, name='salon_config'),
+    path('painel/', views.dashboard_24h, name='dashboard'),
 
     # AJAX
     path('horarios-disponiveis/', views.available_slots_api, name='available_slots'),

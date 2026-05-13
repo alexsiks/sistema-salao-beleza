@@ -14,15 +14,21 @@ def login_view(request):
     if request.user.is_authenticated:
         return redirect('books:list')
     if request.method == 'POST':
-        username = request.POST.get('username', '').strip()
+        credential = request.POST.get('username', '').strip()
         password = request.POST.get('password', '')
-        user = authenticate(request, username=username, password=password)
+        user = authenticate(request, username=credential, password=password)
+        if not user and '@' in credential:
+            try:
+                u = User.objects.get(email__iexact=credential)
+                user = authenticate(request, username=u.username, password=password)
+            except User.DoesNotExist:
+                pass
         if user:
             login(request, user)
             ActionLog.log(user=user, action='LOGIN',
                           description=f'Login bem-sucedido: {user.username}', request=request)
             return redirect(request.GET.get('next', 'books:list'))
-        messages.error(request, 'Usuário ou senha inválidos.')
+        messages.error(request, 'Usuário/e-mail ou senha inválidos.')
     return render(request, 'accounts/login.html')
 
 

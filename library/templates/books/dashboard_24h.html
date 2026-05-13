@@ -1,0 +1,303 @@
+{% extends 'base.html' %}
+{% block title %}Painel — {{ config.salon_name }}{% endblock %}
+{% block content %}
+<div class="space-y-6">
+
+  <!-- Header -->
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-4">
+      <div class="p-3 rounded-xl bg-pink-100">
+        <i class="bi bi-speedometer2 text-primary text-2xl"></i>
+      </div>
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800">Painel de Atendimento</h2>
+        <p class="text-gray-500 text-sm">Visão geral • Hoje e últimas 24 horas</p>
+      </div>
+    </div>
+    <div class="text-right text-xs text-gray-400">
+      <div class="font-semibold text-gray-600 text-sm">{{ now|date:"d/m/Y" }}</div>
+      <div>Atualizado às {{ now|date:"H:i" }}</div>
+      <button onclick="location.reload()" class="mt-1 text-primary hover:underline text-xs flex items-center gap-1 ml-auto">
+        <i class="bi bi-arrow-clockwise"></i> Atualizar
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI cards — today -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="bg-white rounded-2xl shadow-sm p-5 flex items-center gap-4">
+      <div class="p-3 rounded-xl bg-blue-50 shrink-0">
+        <i class="bi bi-calendar-day text-blue-500 text-xl"></i>
+      </div>
+      <div>
+        <div class="text-2xl font-bold text-gray-800">{{ today_total }}</div>
+        <div class="text-xs text-gray-500">Agend. hoje</div>
+      </div>
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm p-5 flex items-center gap-4">
+      <div class="p-3 rounded-xl bg-green-50 shrink-0">
+        <i class="bi bi-check-circle text-green-500 text-xl"></i>
+      </div>
+      <div>
+        <div class="text-2xl font-bold text-gray-800">{{ today_confirmed }}</div>
+        <div class="text-xs text-gray-500">Confirmados</div>
+      </div>
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm p-5 flex items-center gap-4">
+      <div class="p-3 rounded-xl bg-purple-50 shrink-0">
+        <i class="bi bi-patch-check text-purple-500 text-xl"></i>
+      </div>
+      <div>
+        <div class="text-2xl font-bold text-gray-800">{{ today_completed }}</div>
+        <div class="text-xs text-gray-500">Concluídos hoje</div>
+      </div>
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm p-5 flex items-center gap-4">
+      <div class="p-3 rounded-xl bg-pink-50 shrink-0">
+        <i class="bi bi-cash-coin text-primary text-xl"></i>
+      </div>
+      <div>
+        <div class="text-2xl font-bold text-gray-800">R$ {{ revenue_today|floatformat:2 }}</div>
+        <div class="text-xs text-gray-500">Receita hoje</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Second row of KPIs — last 24h -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div class="bg-gradient-to-br from-primary to-primary-dark rounded-2xl shadow-sm p-5 flex items-center gap-4 text-white">
+      <div class="p-3 rounded-xl bg-white/20 shrink-0">
+        <i class="bi bi-clock-history text-white text-xl"></i>
+      </div>
+      <div>
+        <div class="text-2xl font-bold">{{ appts_24h.count }}</div>
+        <div class="text-xs text-pink-200">Novos em 24h</div>
+      </div>
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm p-5 flex items-center gap-4">
+      <div class="p-3 rounded-xl bg-yellow-50 shrink-0">
+        <i class="bi bi-hourglass-split text-yellow-500 text-xl"></i>
+      </div>
+      <div>
+        <div class="text-2xl font-bold text-gray-800">{{ today_pending }}</div>
+        <div class="text-xs text-gray-500">Pendentes</div>
+      </div>
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm p-5 flex items-center gap-4">
+      <div class="p-3 rounded-xl bg-red-50 shrink-0">
+        <i class="bi bi-x-circle text-red-400 text-xl"></i>
+      </div>
+      <div>
+        <div class="text-2xl font-bold text-gray-800">{{ today_cancelled }}</div>
+        <div class="text-xs text-gray-500">Cancelados</div>
+      </div>
+    </div>
+    <div class="bg-white rounded-2xl shadow-sm p-5 flex items-center gap-4">
+      <div class="p-3 rounded-xl bg-teal-50 shrink-0">
+        <i class="bi bi-person-plus text-teal-500 text-xl"></i>
+      </div>
+      <div>
+        <div class="text-2xl font-bold text-gray-800">{{ new_users.count }}</div>
+        <div class="text-xs text-gray-500">Novos clientes 24h</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main content grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- Left column: upcoming today + appointments 24h -->
+    <div class="lg:col-span-2 space-y-6">
+
+      <!-- Upcoming appointments today -->
+      <div class="bg-white rounded-2xl shadow-sm p-5">
+        <h3 class="font-bold text-gray-700 text-sm uppercase tracking-wide mb-4 flex items-center gap-2">
+          <i class="bi bi-calendar-event text-primary"></i>
+          Próximos atendimentos hoje ({{ upcoming_today|length }})
+        </h3>
+        {% if upcoming_today %}
+        <div class="space-y-2">
+          {% for a in upcoming_today %}
+          <div class="flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-100
+            {% if a.status == 'CONFIRMED' %}bg-green-50 border-green-100{% else %}bg-yellow-50 border-yellow-100{% endif %}">
+            <div class="text-base font-bold {% if a.status == 'CONFIRMED' %}text-green-700{% else %}text-yellow-700{% endif %} w-12 shrink-0">
+              {{ a.start_time|time:"H:i" }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="font-semibold text-gray-800 text-sm truncate">{{ a.client.get_full_name|default:a.client.username }}</div>
+              <div class="text-xs text-gray-500 truncate">{{ a.service.name }}{% if a.professional %} · {{ a.professional.full_name }}{% endif %}</div>
+            </div>
+            <div class="shrink-0 text-xs font-bold {% if a.status == 'CONFIRMED' %}text-green-600{% else %}text-yellow-600{% endif %}">
+              {% if a.status == 'CONFIRMED' %}<i class="bi bi-check-circle"></i> Confirm.{% else %}<i class="bi bi-hourglass"></i> Pendente{% endif %}
+            </div>
+            <div class="shrink-0 text-xs text-gray-500 font-semibold">R$ {{ a.price_snapshot|floatformat:2 }}</div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8 text-gray-400 text-sm">
+          <i class="bi bi-calendar-check text-gray-300 text-3xl block mb-2"></i>
+          Nenhum atendimento pendente para hoje.
+        </div>
+        {% endif %}
+      </div>
+
+      <!-- Appointments created in last 24h -->
+      <div class="bg-white rounded-2xl shadow-sm p-5">
+        <h3 class="font-bold text-gray-700 text-sm uppercase tracking-wide mb-4 flex items-center gap-2">
+          <i class="bi bi-clock-history text-primary"></i>
+          Agendamentos criados nas últimas 24h ({{ appts_24h.count }})
+        </h3>
+        {% if appts_24h %}
+        <div class="space-y-2 max-h-96 overflow-y-auto pr-1">
+          {% for a in appts_24h %}
+          <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-100 hover:bg-gray-50 transition">
+            <div class="w-1.5 h-8 rounded-full shrink-0
+              {% if a.status == 'CONFIRMED' %}bg-green-400
+              {% elif a.status == 'PENDING' %}bg-yellow-400
+              {% elif a.status == 'COMPLETED' %}bg-purple-400
+              {% elif a.status == 'CANCELLED' %}bg-red-400
+              {% else %}bg-gray-300{% endif %}"></div>
+            <div class="flex-1 min-w-0">
+              <div class="font-semibold text-gray-800 text-sm truncate">{{ a.client.get_full_name|default:a.client.username }}</div>
+              <div class="text-xs text-gray-500 truncate">{{ a.service.name }} · {{ a.date|date:"d/m" }} às {{ a.start_time|time:"H:i" }}</div>
+            </div>
+            <div class="text-right shrink-0">
+              <div class="text-xs font-bold
+                {% if a.status == 'CONFIRMED' %}text-green-600
+                {% elif a.status == 'PENDING' %}text-yellow-600
+                {% elif a.status == 'COMPLETED' %}text-purple-600
+                {% elif a.status == 'CANCELLED' %}text-red-500
+                {% else %}text-gray-400{% endif %}">
+                {{ a.get_status_display }}
+              </div>
+              <div class="text-xs text-gray-400">{{ a.created_at|date:"H:i" }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="text-center py-8 text-gray-400 text-sm">
+          <i class="bi bi-inbox text-gray-300 text-3xl block mb-2"></i>
+          Nenhum agendamento criado nas últimas 24 horas.
+        </div>
+        {% endif %}
+      </div>
+
+    </div>
+
+    <!-- Right column: stats + logs -->
+    <div class="space-y-6">
+
+      <!-- Professional performance today -->
+      <div class="bg-white rounded-2xl shadow-sm p-5">
+        <h3 class="font-bold text-gray-700 text-sm uppercase tracking-wide mb-4 flex items-center gap-2">
+          <i class="bi bi-people text-primary"></i> Profissionais hoje
+        </h3>
+        {% if prof_stats %}
+        <div class="space-y-3">
+          {% for ps in prof_stats %}
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-pink-100 flex items-center justify-center shrink-0 text-primary font-bold text-xs">
+              {{ ps.professional.full_name|slice:":1"|upper }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-semibold text-gray-800 truncate">{{ ps.professional.full_name }}</div>
+              <div class="flex gap-2 text-xs text-gray-400 mt-0.5">
+                <span class="text-green-600 font-medium">{{ ps.completed }} concl.</span>
+                <span>{{ ps.confirmed }} conf.</span>
+                <span>{{ ps.pending }} pend.</span>
+              </div>
+            </div>
+            <div class="text-right shrink-0">
+              <div class="text-sm font-bold text-gray-700">{{ ps.total }}</div>
+              <div class="text-xs text-gray-400">atend.</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-400 text-center py-4">Sem atendimentos hoje.</p>
+        {% endif %}
+      </div>
+
+      <!-- Top services last 24h -->
+      <div class="bg-white rounded-2xl shadow-sm p-5">
+        <h3 class="font-bold text-gray-700 text-sm uppercase tracking-wide mb-4 flex items-center gap-2">
+          <i class="bi bi-bar-chart text-primary"></i> Serviços (24h)
+        </h3>
+        {% if top_services %}
+        <div class="space-y-2">
+          {% for svc in top_services %}
+          <div class="flex items-center gap-2">
+            <div class="flex-1 min-w-0">
+              <div class="text-sm text-gray-700 truncate">{{ svc.service__name }}</div>
+              <div class="h-1.5 bg-pink-100 rounded-full mt-1 overflow-hidden">
+                <div class="h-full bg-primary rounded-full" style="width: {% widthratio svc.count top_services.0.count 100 %}%"></div>
+              </div>
+            </div>
+            <div class="text-sm font-bold text-gray-700 shrink-0">{{ svc.count }}</div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-400 text-center py-4">Nenhum serviço agendado nas últimas 24h.</p>
+        {% endif %}
+      </div>
+
+      <!-- New clients 24h -->
+      {% if new_users %}
+      <div class="bg-white rounded-2xl shadow-sm p-5">
+        <h3 class="font-bold text-gray-700 text-sm uppercase tracking-wide mb-4 flex items-center gap-2">
+          <i class="bi bi-person-plus text-primary"></i> Novos clientes (24h)
+        </h3>
+        <div class="space-y-2">
+          {% for u in new_users %}
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-full bg-teal-100 flex items-center justify-center shrink-0 text-teal-600 font-bold text-xs">
+              {{ u.get_full_name|default:u.username|slice:":1"|upper }}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-medium text-gray-700 truncate">{{ u.get_full_name|default:u.username }}</div>
+              <div class="text-xs text-gray-400 truncate">{{ u.email }}</div>
+            </div>
+            <div class="text-xs text-gray-400 shrink-0">{{ u.date_joined|date:"H:i" }}</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Recent activity logs 24h -->
+      <div class="bg-white rounded-2xl shadow-sm p-5">
+        <h3 class="font-bold text-gray-700 text-sm uppercase tracking-wide mb-4 flex items-center gap-2">
+          <i class="bi bi-activity text-primary"></i> Atividade recente
+        </h3>
+        {% if recent_logs %}
+        <div class="space-y-1.5 max-h-64 overflow-y-auto pr-1">
+          {% for log in recent_logs %}
+          <div class="flex items-start gap-2 text-xs">
+            <div class="shrink-0 mt-0.5">
+              {% if log.action == 'LOGIN' %}<i class="bi bi-box-arrow-in-right text-blue-400"></i>
+              {% elif log.action == 'LOGOUT' %}<i class="bi bi-box-arrow-right text-gray-400"></i>
+              {% elif log.action == 'REGISTER' %}<i class="bi bi-person-plus text-teal-400"></i>
+              {% elif log.action == 'OTHER' %}<i class="bi bi-calendar-plus text-pink-400"></i>
+              {% else %}<i class="bi bi-dot text-gray-400"></i>{% endif %}
+            </div>
+            <div class="flex-1 min-w-0">
+              <span class="font-medium text-gray-700">{{ log.user.username|default:"—" }}</span>
+              <span class="text-gray-500 ml-1">{{ log.description|truncatechars:50 }}</span>
+            </div>
+            <div class="shrink-0 text-gray-400 whitespace-nowrap">{{ log.timestamp|date:"H:i" }}</div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-sm text-gray-400 text-center py-4">Nenhuma atividade nas últimas 24h.</p>
+        {% endif %}
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,9 +1,11 @@
 from datetime import date, datetime, timedelta
+from decimal import Decimal
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.http import JsonResponse
-from django.db.models import Q
+from django.db.models import Q, Sum, Count
+from django.contrib.auth.models import User
 from .models import Service, ServiceCategory, Professional, Appointment, SalonConfig, ClosedDate, WEEKDAY_CHOICES
 from .forms import ServiceForm, SalonConfigForm, AppointmentBookingForm, ClosedDateForm
 from accounts.models import ActionLog
@@ -372,6 +374,106 @@ def professionals_list(request):
         is_active=True).select_related('user').prefetch_related('services')
     config = SalonConfig.get()
     return render(request, 'books/professionals.html', {'professionals': professionals, 'config': config})
+
+
+@login_required
+def dashboard_24h(request):
+    if not request.user.is_staff:
+        messages.error(request, 'Acesso não autorizado.')
+        return redirect('books:list')
+
+    config = SalonConfig.get()
+    now = datetime.now()
+    since = now - timedelta(hours=24)
+    today = date.today()
+
+    # Appointments created in last 24h
+    appts_24h = Appointment.objects.filter(
+        created_at__gte=since
+    ).select_related('client', 'professional__user', 'service').order_by('-created_at')
+
+    # Appointments scheduled for today
+    todays_appts = Appointment.objects.filter(
+        date=today
+    ).select_related('client', 'professional__user', 'service').order_by('start_time')
+
+    # Status counts (last 24h created)
+    status_counts = {s: 0 for s, _ in Appointment.STATUS_CHOICES}
+    for a in appts_24h:
+        status_counts[a.status] = status_counts.get(a.status, 0) + 1
+
+    # Revenue from completed appointments today
+    revenue_today = todays_appts.filter(status='COMPLETED').aggregate(
+        total=Sum('price_snapshot')
+    )['total'] or Decimal('0.00')
+
+    # Revenue from completed in last 24h (created)
+    revenue_24h = appts_24h.filter(status='COMPLETED').aggregate(
+        total=Sum('price_snapshot')
+    )['total'] or Decimal('0.00')
+
+    # Upcoming appointments today (pending/confirmed, not yet started)
+    upcoming_today = [a for a in todays_appts if a.status in ('PENDING', 'CONFIRMED')]
+
+    # New users in last 24h
+    new_users = User.objects.filter(date_joined__gte=since).order_by('-date_joined')
+
+    # Top services in last 24h
+    top_services = (
+        Appointment.objects.filter(created_at__gte=since)
+        .values('service__name')
+        .annotate(count=Count('id'))
+        .order_by('-count')[:5]
+    )
+
+    # Professional performance today
+    prof_stats = []
+    professionals = Professional.objects.filter(is_active=True).select_related('user')
+    for p in professionals:
+        pday = todays_appts.filter(professional=p)
+        prof_stats.append({
+            'professional': p,
+            'total': pday.count(),
+            'completed': pday.filter(status='COMPLETED').count(),
+            'pending': pday.filter(status='PENDING').count(),
+            'confirmed': pday.filter(status='CONFIRMED').count(),
+            'revenue': pday.filter(status='COMPLETED').aggregate(
+                t=Sum('price_snapshot'))['t'] or Decimal('0.00'),
+        })
+    prof_stats.sort(key=lambda x: x['total'], reverse=True)
+
+    # Recent action logs last 24h
+    recent_logs = ActionLog.objects.filter(
+        timestamp__gte=since
+    ).select_related('user').order_by('-timestamp')[:30]
+
+    # Today totals for the top cards
+    today_total = todays_appts.count()
+    today_confirmed = todays_appts.filter(status='CONFIRMED').count()
+    today_pending = todays_appts.filter(status='PENDING').count()
+    today_completed = todays_appts.filter(status='COMPLETED').count()
+    today_cancelled = todays_appts.filter(status='CANCELLED').count()
+
+    return render(request, 'books/dashboard_24h.html', {
+        'config': config,
+        'now': now,
+        'since': since,
+        'appts_24h': appts_24h,
+        'todays_appts': todays_appts,
+        'upcoming_today': upcoming_today,
+        'status_counts': status_counts,
+        'revenue_today': revenue_today,
+        'revenue_24h': revenue_24h,
+        'new_users': new_users,
+        'top_services': top_services,
+        'prof_stats': prof_stats,
+        'recent_logs': recent_logs,
+        'today_total': today_total,
+        'today_confirmed': today_confirmed,
+        'today_pending': today_pending,
+        'today_completed': today_completed,
+        'today_cancelled': today_cancelled,
+    })
 
 
 @login_required
