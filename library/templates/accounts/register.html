@@ -10,67 +10,148 @@
         </div>
         <div>
           <h3 class="text-2xl font-bold text-gray-800">Criar Conta</h3>
-          <p class="text-gray-500 text-sm">Preencha os dados para se cadastrar</p>
+          <p class="text-gray-500 text-sm">Campos com <span class="text-red-500 font-bold">*</span> são obrigatórios</p>
         </div>
       </div>
-      <form method="post" class="space-y-4">
+
+      <form method="post" class="space-y-6" novalidate>
         {% csrf_token %}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-1">Usuário *</label>
-            {{ form.username }}
-            {% if form.username.errors %}<p class="text-red-500 text-xs mt-1">{{ form.username.errors }}</p>{% endif %}
+
+        <!-- Dados de acesso -->
+        <div>
+          <h4 class="font-bold text-gray-700 text-xs uppercase tracking-wide mb-3 flex items-center gap-2 border-b border-gray-100 pb-2">
+            <i class="bi bi-shield-lock text-primary"></i> Dados de Acesso
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Usuário <span class="text-red-500">*</span></label>
+              <input type="text" name="username"
+                     value="{{ form.username.value|default:'' }}"
+                     required autocomplete="username"
+                     placeholder="nome_usuario"
+                     class="w-full border {% if form.username.errors %}border-red-400 bg-red-50{% else %}border-gray-300{% endif %} rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary">
+              {% if form.username.errors %}<p class="text-red-500 text-xs mt-1">{{ form.username.errors|join:", " }}</p>{% endif %}
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">E-mail <span class="text-red-500">*</span></label>
+              {{ form.email }}
+              {% if form.email.errors %}<p class="text-red-500 text-xs mt-1">{{ form.email.errors|join:", " }}</p>{% endif %}
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Senha <span class="text-red-500">*</span></label>
+              <input type="password" name="password1" required autocomplete="new-password"
+                     placeholder="Mínimo 8 caracteres"
+                     class="w-full border {% if form.password1.errors %}border-red-400 bg-red-50{% else %}border-gray-300{% endif %} rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary">
+              {% if form.password1.errors %}<p class="text-red-500 text-xs mt-1">{{ form.password1.errors|join:", " }}</p>{% endif %}
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Confirmar Senha <span class="text-red-500">*</span></label>
+              <input type="password" name="password2" required autocomplete="new-password"
+                     placeholder="Repita a senha"
+                     class="w-full border {% if form.password2.errors %}border-red-400 bg-red-50{% else %}border-gray-300{% endif %} rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary">
+              {% if form.password2.errors %}<p class="text-red-500 text-xs mt-1">{{ form.password2.errors|join:", " }}</p>{% endif %}
+            </div>
           </div>
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-1">E-mail</label>
-            {{ form.email }}
+        </div>
+
+        <!-- Dados pessoais -->
+        <div>
+          <h4 class="font-bold text-gray-700 text-xs uppercase tracking-wide mb-3 flex items-center gap-2 border-b border-gray-100 pb-2">
+            <i class="bi bi-person text-primary"></i> Dados Pessoais
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Nome <span class="text-red-500">*</span></label>
+              {{ form.first_name }}
+              {% if form.first_name.errors %}<p class="text-red-500 text-xs mt-1">{{ form.first_name.errors|join:", " }}</p>{% endif %}
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Sobrenome <span class="text-red-500">*</span></label>
+              {{ form.last_name }}
+              {% if form.last_name.errors %}<p class="text-red-500 text-xs mt-1">{{ form.last_name.errors|join:", " }}</p>{% endif %}
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Telefone <span class="text-red-500">*</span></label>
+              {{ form.phone }}
+              {% if form.phone.errors %}<p class="text-red-500 text-xs mt-1">{{ form.phone.errors|join:", " }}</p>{% endif %}
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Data de Nascimento <span class="text-red-500">*</span></label>
+              {{ form.birth_date }}
+              {% if form.birth_date.errors %}<p class="text-red-500 text-xs mt-1">{{ form.birth_date.errors|join:", " }}</p>{% endif %}
+            </div>
+            <div class="md:col-span-2">
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Sexo <span class="text-red-500">*</span></label>
+              {{ form.gender }}
+              {% if form.gender.errors %}<p class="text-red-500 text-xs mt-1">{{ form.gender.errors|join:", " }}</p>{% endif %}
+            </div>
           </div>
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-1">Nome *</label>
-            {{ form.first_name }}
+        </div>
+
+        <!-- Endereço -->
+        <div>
+          <h4 class="font-bold text-gray-700 text-xs uppercase tracking-wide mb-3 flex items-center gap-2 border-b border-gray-100 pb-2">
+            <i class="bi bi-geo-alt text-primary"></i> Endereço <span class="text-red-500">*</span>
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <!-- CEP com busca automática -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">CEP <span class="text-red-500">*</span></label>
+              <div class="flex gap-2">
+                {{ form.cep }}
+                <button type="button" id="btnCep"
+                        class="shrink-0 border border-gray-300 text-gray-600 px-3 rounded-lg hover:bg-pink-50 hover:border-primary hover:text-primary transition text-sm flex items-center gap-1">
+                  <i class="bi bi-search"></i>
+                </button>
+              </div>
+              <div id="cepStatus" class="text-xs mt-1 text-gray-400 min-h-[1rem]"></div>
+              {% if form.cep.errors %}<p class="text-red-500 text-xs mt-1">{{ form.cep.errors|join:", " }}</p>{% endif %}
+            </div>
+
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Logradouro <span class="text-red-500">*</span></label>
+              {{ form.logradouro }}
+              {% if form.logradouro.errors %}<p class="text-red-500 text-xs mt-1">{{ form.logradouro.errors|join:", " }}</p>{% endif %}
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Número <span class="text-red-500">*</span></label>
+              {{ form.numero }}
+              {% if form.numero.errors %}<p class="text-red-500 text-xs mt-1">{{ form.numero.errors|join:", " }}</p>{% endif %}
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Complemento <span class="text-gray-400 font-normal text-xs">(opcional)</span></label>
+              {{ form.complemento }}
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Bairro <span class="text-red-500">*</span></label>
+              {{ form.bairro }}
+              {% if form.bairro.errors %}<p class="text-red-500 text-xs mt-1">{{ form.bairro.errors|join:", " }}</p>{% endif %}
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">Cidade <span class="text-red-500">*</span></label>
+              {{ form.cidade }}
+              {% if form.cidade.errors %}<p class="text-red-500 text-xs mt-1">{{ form.cidade.errors|join:", " }}</p>{% endif %}
+            </div>
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-1">UF <span class="text-red-500">*</span></label>
+              {{ form.estado }}
+              {% if form.estado.errors %}<p class="text-red-500 text-xs mt-1">{{ form.estado.errors|join:", " }}</p>{% endif %}
+            </div>
           </div>
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-1">Sobrenome</label>
-            {{ form.last_name }}
-          </div>
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-1">Senha *</label>
-            {{ form.password1 }}
-            {% if form.password1.errors %}<p class="text-red-500 text-xs mt-1">{{ form.password1.errors }}</p>{% endif %}
-          </div>
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-1">Confirmar Senha *</label>
-            {{ form.password2 }}
-            {% if form.password2.errors %}<p class="text-red-500 text-xs mt-1">{{ form.password2.errors }}</p>{% endif %}
-          </div>
-          {% if form.phone %}
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-1">Telefone</label>
-            {{ form.phone }}
-          </div>
-          {% endif %}
-          {% if form.birth_date %}
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-1">Data de Nascimento</label>
-            {{ form.birth_date }}
-          </div>
-          {% endif %}
-          {% if form.gender %}
-          <div>
-            <label class="block text-sm font-semibold text-gray-700 mb-1">Gênero</label>
-            {{ form.gender }}
-          </div>
-          {% endif %}
         </div>
 
         {% if form.non_field_errors %}
-        <div class="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">{{ form.non_field_errors }}</div>
+        <div class="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+          {{ form.non_field_errors }}
+        </div>
         {% endif %}
 
-        <button type="submit" class="w-full bg-primary text-white font-semibold py-3 rounded-lg hover:bg-primary-dark transition flex items-center justify-center gap-2 mt-2">
+        <button type="submit"
+                class="w-full bg-primary text-white font-semibold py-3 rounded-lg hover:bg-primary-dark transition flex items-center justify-center gap-2">
           <i class="bi bi-person-check"></i> Criar Conta
         </button>
       </form>
+
       <hr class="my-5 border-gray-100">
       <p class="text-center text-sm text-gray-500">
         Já tem conta?
@@ -79,4 +160,45 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('btnCep').addEventListener('click', buscarCep);
+document.getElementById('id_cep').addEventListener('blur', buscarCep);
+
+function buscarCep() {
+  const cep = document.getElementById('id_cep').value.replace(/\D/g, '');
+  const status = document.getElementById('cepStatus');
+  if (cep.length !== 8) {
+    status.textContent = cep.length ? 'CEP deve ter 8 dígitos.' : '';
+    status.className = 'text-xs mt-1 text-red-400 min-h-[1rem]';
+    return;
+  }
+  status.textContent = 'Buscando endereço...';
+  status.className = 'text-xs mt-1 text-gray-400 min-h-[1rem]';
+
+  fetch(`/accounts/cep/public/?cep=${cep}`)
+    .then(r => r.json())
+    .then(d => {
+      if (d.error) {
+        status.textContent = d.error;
+        status.className = 'text-xs mt-1 text-red-400 min-h-[1rem]';
+        return;
+      }
+      document.getElementById('id_logradouro').value = d.logradouro || '';
+      document.getElementById('id_bairro').value     = d.bairro     || '';
+      document.getElementById('id_cidade').value     = d.cidade     || '';
+      document.getElementById('id_estado').value     = d.estado     || '';
+      document.getElementById('id_complemento').value= d.complemento|| '';
+      status.textContent = '✓ Endereço preenchido automaticamente!';
+      status.className = 'text-xs mt-1 text-green-500 min-h-[1rem]';
+      document.getElementById('id_numero').focus();
+    })
+    .catch(() => {
+      status.textContent = 'Erro ao consultar o CEP. Preencha manualmente.';
+      status.className = 'text-xs mt-1 text-red-400 min-h-[1rem]';
+    });
+}
+</script>
 {% endblock %}
