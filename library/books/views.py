@@ -1,333 +1,382 @@
+from datetime import date, datetime, timedelta
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.http import JsonResponse
 from django.db.models import Q
-from .models import Book, Category, Reservation, Comment, Rating, LibraryConfig
-from .forms import BookForm, CommentForm, LibraryConfigForm
+from .models import Service, ServiceCategory, Professional, Appointment, SalonConfig
+from .forms import ServiceForm, SalonConfigForm, AppointmentBookingForm
 from accounts.models import ActionLog
 
 
-def book_list(request):
-    books = Book.objects.prefetch_related('categories', 'ratings').order_by('title')
+def service_list(request):
+    config = SalonConfig.get()
+    services = Service.objects.filter(is_active=True).select_related('category')
+    categories = ServiceCategory.objects.all()
+
     q = request.GET.get('q', '')
-    category_id = request.GET.get('category', '')
-    available = request.GET.get('available', '')
-
+    cat_id = request.GET.get('category', '')
     if q:
-        books = books.filter(Q(title__icontains=q) | Q(author__icontains=q) | Q(description__icontains=q))
-    if category_id:
-        books = books.filter(categories__id=category_id)
-    if available == '1':
-        books = books.filter(available_copies__gt=0)
+        services = services.filter(Q(name__icontains=q) | Q(description__icontains=q))
+    if cat_id:
+        services = services.filter(category_id=cat_id)
 
-    categories = Category.objects.all()
     return render(request, 'books/list.html', {
-        'books': books, 'categories': categories,
-        'q': q, 'category_id': category_id, 'available': available
+        'services': services,
+        'categories': categories,
+        'q': q,
+        'cat_id': cat_id,
+        'config': config,
     })
 
 
-def book_detail(request, pk):
-    book = get_object_or_404(Book.objects.prefetch_related('categories', 'comments__user', 'ratings'), pk=pk)
-    user_rating = None
-    user_reservation = None
-    if request.user.is_authenticated:
-        user_rating = Rating.objects.filter(user=request.user, book=book).first()
-        user_reservation = Reservation.objects.filter(
-            user=request.user, book=book, status__in=['PENDING', 'ACTIVE', 'OVERDUE']
-        ).first()
-        ActionLog.log(user=request.user, action='BOOK_VIEW',
-                      description=f'Visualizou: {book.title}', request=request)
-    comment_form = CommentForm()
-    config = LibraryConfig.get()
+def service_detail(request, pk):
+    service = get_object_or_404(Service, pk=pk, is_active=True)
+    professionals = service.professionals.filter(is_active=True)
+    config = SalonConfig.get()
     return render(request, 'books/detail.html', {
-        'book': book,
-        'user_rating': user_rating,
-        'user_reservation': user_reservation,
-        'comment_form': comment_form,
-        'star_range': range(1, 6),
+        'service': service,
+        'professionals': professionals,
         'config': config,
     })
 
 
 @login_required
-def book_create(request):
-    if not request.user.is_staff:
-        messages.error(request, 'Somente administradores podem cadastrar livros.')
-        return redirect('books:list')
-    form = BookForm(request.POST or None, request.FILES or None)
-    if request.method == 'POST' and form.is_valid():
-        book = form.save(commit=False)
-        book.created_by = request.user
-        book.available_copies = book.total_copies
-        book.save()
-        form.save_m2m()
-        ActionLog.log(user=request.user, action='BOOK_CREATE',
-                      description=f'Livro cadastrado: {book.title}', request=request,
-                      extra_data={'book_id': book.id, 'title': book.title})
-        messages.success(request, f'Livro "{book.title}" cadastrado com sucesso!')
-        return redirect('books:detail', pk=book.pk)
-    return render(request, 'books/form.html', {'form': form, 'action': 'Cadastrar'})
+def book_appointment(request, pk):
+    service = get_object_or_404(Service, pk=pk, is_active=True)
+    config = SalonConfig.get()
 
-
-@login_required
-def book_edit(request, pk):
-    if not request.user.is_staff:
-        messages.error(request, 'Somente administradores podem editar livros.')
-        return redirect('books:list')
-    book = get_object_or_404(Book, pk=pk)
-    form = BookForm(request.POST or None, request.FILES or None, instance=book)
-    if request.method == 'POST' and form.is_valid():
-        instance = form.save(commit=False)
-        # Se nenhum arquivo novo foi enviado E o usuário não marcou "remover",
-        # preserva a imagem existente
-        if not request.FILES.get('cover_image') and not request.POST.get('cover_image_clear'):
-            instance.cover_image = book.cover_image
-        elif request.POST.get('cover_image_clear'):
-            instance.cover_image = None
-        instance.save()
-        form.save_m2m()
-        ActionLog.log(user=request.user, action='BOOK_UPDATE',
-                      description=f'Livro editado: {book.title}', request=request)
-        messages.success(request, f'Livro "{book.title}" atualizado!')
-        return redirect('books:detail', pk=book.pk)
-    return render(request, 'books/form.html', {'form': form, 'book': book, 'action': 'Editar'})
-
-
-@login_required
-def book_delete(request, pk):
-    if not request.user.is_staff:
-        messages.error(request, 'Somente administradores podem excluir livros.')
-        return redirect('books:list')
-    book = get_object_or_404(Book, pk=pk)
     if request.method == 'POST':
-        title = book.title
-        ActionLog.log(user=request.user, action='BOOK_DELETE',
-                      description=f'Livro excluído: {title}', request=request)
-        book.delete()
-        messages.success(request, f'Livro "{title}" excluído.')
-        return redirect('books:list')
-    return render(request, 'books/confirm_delete.html', {'book': book})
+        professional_id = request.POST.get('professional') or None
+        appt_date_str = request.POST.get('date')
+        start_time_str = request.POST.get('start_time')
 
+        if not appt_date_str or not start_time_str:
+            messages.error(request, 'Selecione a data e o horário.')
+            return redirect('books:book', pk=pk)
 
-@login_required
-def book_reserve(request, pk):
-    book = get_object_or_404(Book, pk=pk)
-    if book.available_copies <= 0:
-        messages.error(request, 'Não há exemplares disponíveis para empréstimo.')
-        return redirect('books:detail', pk=pk)
-    existing = Reservation.objects.filter(
-        user=request.user, book=book, status__in=['PENDING', 'ACTIVE', 'OVERDUE']
-    ).exists()
-    if existing:
-        messages.warning(request, 'Você já possui um empréstimo ativo para este livro.')
-        return redirect('books:detail', pk=pk)
+        appt_date = datetime.strptime(appt_date_str, '%Y-%m-%d').date()
+        start_time = datetime.strptime(start_time_str, '%H:%M').time()
+        end_dt = datetime.combine(appt_date, start_time) + timedelta(minutes=service.duration_minutes)
+        end_time = end_dt.time()
 
-    config = LibraryConfig.get()
-    reservation = Reservation.objects.create(
-        user=request.user,
-        book=book,
-        status='PENDING',
-        rental_price_snapshot=book.rental_price,
-        fine_per_day_snapshot=config.fine_per_day,
-    )
-    book.available_copies -= 1
-    book.save()
-    ActionLog.log(user=request.user, action='BOOK_RESERVE',
-                  description=f'Solicitou empréstimo: {book.title}', request=request,
-                  extra_data={'book_id': book.id, 'rental_price': str(book.rental_price)})
-    messages.success(request, f'Solicitação de empréstimo do livro "{book.title}" realizada! Aguarde a confirmação.')
-    return redirect('books:my_reservations')
-
-
-@login_required
-def confirm_loan(request, pk):
-    if not request.user.is_staff:
-        messages.error(request, 'Acesso não autorizado.')
-        return redirect('books:list')
-    reservation = get_object_or_404(Reservation, pk=pk, status='PENDING')
-    if request.method == 'POST':
-        reservation.confirm_loan()
-        ActionLog.log(user=request.user, action='BOOK_RESERVE',
-                      description=f'Solicitação aprovada: {reservation.book.title} para {reservation.user.username}',
-                      request=request)
-        messages.success(request, f'Solicitação aprovada! Devolução prevista: {reservation.due_date.strftime("%d/%m/%Y")}')
-    return redirect('books:all_reservations')
-
-
-@login_required
-def reject_reservation(request, pk):
-    if not request.user.is_staff:
-        messages.error(request, 'Acesso não autorizado.')
-        return redirect('books:list')
-    reservation = get_object_or_404(Reservation, pk=pk, status='PENDING')
-    if request.method == 'POST':
-        reason = request.POST.get('reason', '').strip()
-        reservation.status = 'CANCELLED'
-        if reason:
-            reservation.notes = f'Rejeitado: {reason}'
-        reservation.save()
-        reservation.book.available_copies += 1
-        reservation.book.save()
-        ActionLog.log(user=request.user, action='RESERVATION_CANCEL',
-                      description=f'Solicitação rejeitada: {reservation.book.title} ({reservation.user.username})',
-                      request=request)
-        messages.warning(request, f'Solicitação de "{reservation.book.title}" rejeitada. O exemplar foi devolvido ao estoque.')
-    return redirect('books:all_reservations')
-
-
-@login_required
-def return_book(request, pk):
-    if not request.user.is_staff:
-        messages.error(request, 'Acesso não autorizado.')
-        return redirect('books:list')
-    reservation = get_object_or_404(Reservation, pk=pk)
-    if reservation.status not in ('ACTIVE', 'OVERDUE', 'PENDING'):
-        messages.error(request, 'Este empréstimo não pode ser registrado como devolvido.')
-        return redirect('books:all_reservations')
-    if request.method == 'POST':
-        fine = reservation.process_return()
-        ActionLog.log(user=request.user, action='RESERVATION_CANCEL',
-                      description=f'Devolução registrada: {reservation.book.title} (multa: R$ {fine:.2f})',
-                      request=request)
-        if fine > 0:
-            messages.warning(request, f'Devolução registrada com multa de R$ {fine:.2f} por {reservation.overdue_days} dia(s) de atraso.')
+        professional = None
+        if professional_id:
+            professional = get_object_or_404(Professional, pk=professional_id, is_active=True)
         else:
-            messages.success(request, 'Devolução registrada com sucesso. Sem multa!')
-    return redirect('books:all_reservations')
+            # Auto-assign first available professional
+            profs = service.professionals.filter(is_active=True)
+            slots_config = config
+            for p in profs:
+                slots = slots_config.available_slots(appt_date, p, service.duration_minutes)
+                if start_time in slots:
+                    professional = p
+                    break
+            if not professional and profs.exists():
+                professional = profs.first()
 
+        # Conflict check
+        if professional:
+            conflict = Appointment.objects.filter(
+                professional=professional,
+                date=appt_date,
+                status__in=['PENDING', 'CONFIRMED'],
+            ).filter(
+                Q(start_time__lt=end_time, end_time__gt=start_time)
+            ).exists()
+            if conflict:
+                messages.error(request, 'Este horário já está ocupado. Escolha outro.')
+                return redirect('books:book', pk=pk)
 
-@login_required
-def mark_fine_paid(request, pk):
-    if not request.user.is_staff:
-        messages.error(request, 'Acesso não autorizado.')
-        return redirect('books:list')
-    reservation = get_object_or_404(Reservation, pk=pk)
-    if request.method == 'POST':
-        reservation.fine_paid = True
-        reservation.save()
-        messages.success(request, f'Multa de R$ {reservation.fine_amount:.2f} marcada como paga.')
-    return redirect('books:all_reservations')
-
-
-@login_required
-def library_config(request):
-    if not request.user.is_staff:
-        messages.error(request, 'Acesso não autorizado.')
-        return redirect('books:list')
-    config = LibraryConfig.get()
-    form = LibraryConfigForm(request.POST or None, instance=config)
-    if request.method == 'POST' and form.is_valid():
-        form.save()
+        appt = Appointment.objects.create(
+            client=request.user,
+            professional=professional,
+            service=service,
+            date=appt_date,
+            start_time=start_time,
+            end_time=end_time,
+            notes=request.POST.get('notes', ''),
+            price_snapshot=service.price,
+            duration_snapshot=service.duration_minutes,
+        )
         ActionLog.log(user=request.user, action='OTHER',
-                      description='Configuração da biblioteca atualizada', request=request)
-        messages.success(request, 'Configuração salva com sucesso!')
-        return redirect('books:library_config')
-    return render(request, 'books/library_config.html', {'form': form, 'config': config})
-
-
-@login_required
-def add_comment(request, pk):
-    book = get_object_or_404(Book, pk=pk)
-    if request.method == 'POST':
-        form = CommentForm(request.POST)
-        if form.is_valid():
-            comment = form.save(commit=False)
-            comment.user = request.user
-            comment.book = book
-            comment.save()
-            ActionLog.log(user=request.user, action='COMMENT_ADD',
-                          description=f'Comentou em: {book.title}', request=request)
-            messages.success(request, 'Comentário adicionado!')
-    return redirect('books:detail', pk=pk)
-
-
-@login_required
-def add_rating(request, pk):
-    book = get_object_or_404(Book, pk=pk)
-    if request.method == 'POST':
-        score = request.POST.get('score')
-        try:
-            score = int(score)
-            if 1 <= score <= 5:
-                rating, created = Rating.objects.update_or_create(
-                    user=request.user, book=book,
-                    defaults={'score': score}
-                )
-                ActionLog.log(user=request.user, action='RATING_ADD',
-                              description=f'Avaliou {book.title} com {score}/5', request=request)
-                messages.success(request, f'Avaliação de {score}/5 registrada!')
-            else:
-                messages.error(request, 'Nota inválida.')
-        except (ValueError, TypeError):
-            messages.error(request, 'Nota inválida.')
-    return redirect('books:detail', pk=pk)
-
-
-@login_required
-def my_reservations(request):
-    reservations = Reservation.objects.filter(
-        user=request.user
-    ).select_related('book').order_by('-reserved_at')
-    for r in reservations:
-        if r.status == 'ACTIVE' and r.is_overdue:
-            r.status = 'OVERDUE'
-            r.save(update_fields=['status'])
-    return render(request, 'books/my_reservations.html', {'reservations': reservations})
-
-
-@login_required
-def cancel_reservation(request, pk):
-    reservation = get_object_or_404(Reservation, pk=pk, user=request.user)
-    if reservation.status not in ['PENDING']:
-        messages.error(request, 'Apenas solicitações pendentes podem ser canceladas.')
-        return redirect('books:my_reservations')
-    if request.method == 'POST':
-        reservation.status = 'CANCELLED'
-        reservation.save()
-        reservation.book.available_copies += 1
-        reservation.book.save()
-        ActionLog.log(user=request.user, action='RESERVATION_CANCEL',
-                      description=f'Cancelou solicitação de: {reservation.book.title}',
+                      description=f'Agendamento criado: {service.name} em {appt_date}',
                       request=request)
-        messages.success(request, 'Solicitação cancelada com sucesso.')
-    return redirect('books:my_reservations')
+        messages.success(request, f'Agendamento de "{service.name}" realizado com sucesso!')
+        return redirect('books:my_appointments')
+
+    # GET — show booking form
+    professionals = service.professionals.filter(is_active=True)
+    max_date = date.today() + timedelta(days=config.max_advance_days)
+    return render(request, 'books/book.html', {
+        'service': service,
+        'professionals': professionals,
+        'config': config,
+        'min_date': date.today().strftime('%Y-%m-%d'),
+        'max_date': max_date.strftime('%Y-%m-%d'),
+    })
+
+
+def available_slots_api(request):
+    """AJAX endpoint: retorna horários disponíveis."""
+    service_id = request.GET.get('service')
+    professional_id = request.GET.get('professional')
+    date_str = request.GET.get('date')
+
+    if not service_id or not date_str:
+        return JsonResponse({'slots': [], 'error': 'Parâmetros obrigatórios: service, date'})
+
+    try:
+        appt_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+    except ValueError:
+        return JsonResponse({'slots': [], 'error': 'Data inválida'})
+
+    if appt_date < date.today():
+        return JsonResponse({'slots': []})
+
+    try:
+        service = Service.objects.get(pk=service_id, is_active=True)
+    except Service.DoesNotExist:
+        return JsonResponse({'slots': [], 'error': 'Serviço não encontrado'})
+
+    config = SalonConfig.get()
+
+    if professional_id:
+        try:
+            professional = Professional.objects.get(pk=professional_id, is_active=True)
+        except Professional.DoesNotExist:
+            return JsonResponse({'slots': []})
+        slots = config.available_slots(appt_date, professional, service.duration_minutes)
+    else:
+        # Merge slots from all professionals
+        profs = service.professionals.filter(is_active=True)
+        all_slots = set()
+        for p in profs:
+            s = config.available_slots(appt_date, p, service.duration_minutes)
+            all_slots.update(s)
+        slots = sorted(all_slots)
+
+    return JsonResponse({'slots': [s.strftime('%H:%M') for s in slots]})
 
 
 @login_required
-def all_reservations(request):
+def my_appointments(request):
+    upcoming = Appointment.objects.filter(
+        client=request.user,
+        date__gte=date.today(),
+        status__in=['PENDING', 'CONFIRMED']
+    ).select_related('service', 'professional__user').order_by('date', 'start_time')
+
+    past = Appointment.objects.filter(
+        client=request.user,
+    ).exclude(
+        date__gte=date.today(), status__in=['PENDING', 'CONFIRMED']
+    ).select_related('service', 'professional__user').order_by('-date', '-start_time')[:20]
+
+    config = SalonConfig.get()
+    return render(request, 'books/my_appointments.html', {
+        'upcoming': upcoming,
+        'past': past,
+        'config': config,
+    })
+
+
+@login_required
+def cancel_appointment(request, pk):
+    appt = get_object_or_404(Appointment, pk=pk, client=request.user)
+    config = SalonConfig.get()
+    if not appt.can_cancel(config):
+        messages.error(request, 'Não é possível cancelar este agendamento.')
+        return redirect('books:my_appointments')
+    if request.method == 'POST':
+        reason = request.POST.get('reason', '')
+        appt.status = 'CANCELLED'
+        appt.cancel_reason = reason
+        appt.save()
+        ActionLog.log(user=request.user, action='OTHER',
+                      description=f'Agendamento cancelado: {appt.service.name}',
+                      request=request)
+        messages.success(request, 'Agendamento cancelado.')
+    return redirect('books:my_appointments')
+
+
+# ── Admin views ─────────────────────────────────────────────────────────────
+
+@login_required
+def all_appointments(request):
     if not request.user.is_staff:
         messages.error(request, 'Acesso não autorizado.')
         return redirect('books:list')
 
-    reservations = Reservation.objects.select_related('user', 'book').order_by('-reserved_at')
-
-    for r in reservations:
-        if r.status == 'ACTIVE' and r.is_overdue:
-            r.status = 'OVERDUE'
-            r.save(update_fields=['status'])
+    appts = Appointment.objects.select_related(
+        'client', 'professional__user', 'service'
+    ).order_by('date', 'start_time')
 
     status_filter = request.GET.get('status', '')
+    date_filter = request.GET.get('date', '')
+    prof_filter = request.GET.get('professional', '')
+
     if status_filter:
-        reservations = reservations.filter(status=status_filter)
+        appts = appts.filter(status=status_filter)
+    if date_filter:
+        appts = appts.filter(date=date_filter)
+    if prof_filter:
+        appts = appts.filter(professional_id=prof_filter)
 
-    from django.db.models import Sum
-    from datetime import date as dt_date
-    all_qs = Reservation.objects.all()
-    pending_count = all_qs.filter(status='PENDING').count()
-    active_count = all_qs.filter(status='ACTIVE').count()
-    overdue_count = all_qs.filter(status__in=['ACTIVE', 'OVERDUE'], due_date__lt=dt_date.today()).count()
-    fine_pending = all_qs.filter(status='RETURNED', fine_paid=False).aggregate(
-        t=Sum('fine_amount'))['t'] or 0
+    professionals = Professional.objects.filter(is_active=True).select_related('user')
+    config = SalonConfig.get()
 
-    config = LibraryConfig.get()
+    today_count = Appointment.objects.filter(date=date.today()).count()
+    pending_count = Appointment.objects.filter(status='PENDING').count()
+    confirmed_count = Appointment.objects.filter(
+        date__gte=date.today(), status='CONFIRMED').count()
+
     return render(request, 'books/all_reservations.html', {
-        'reservations': reservations,
+        'appointments': appts,
+        'professionals': professionals,
+        'status_choices': Appointment.STATUS_CHOICES,
         'status_filter': status_filter,
-        'status_choices': Reservation.STATUS_CHOICES,
+        'date_filter': date_filter,
+        'prof_filter': prof_filter,
         'config': config,
+        'today_count': today_count,
         'pending_count': pending_count,
-        'active_count': active_count,
-        'overdue_count': overdue_count,
-        'fine_pending': f'{fine_pending:.2f}',
+        'confirmed_count': confirmed_count,
     })
+
+
+@login_required
+def confirm_appointment(request, pk):
+    if not request.user.is_staff:
+        messages.error(request, 'Acesso não autorizado.')
+        return redirect('books:list')
+    appt = get_object_or_404(Appointment, pk=pk, status='PENDING')
+    if request.method == 'POST':
+        appt.status = 'CONFIRMED'
+        appt.internal_notes = request.POST.get('internal_notes', appt.internal_notes)
+        appt.save()
+        ActionLog.log(user=request.user, action='OTHER',
+                      description=f'Agendamento confirmado: {appt}', request=request)
+        messages.success(request, 'Agendamento confirmado!')
+    return redirect('books:all_appointments')
+
+
+@login_required
+def reject_appointment(request, pk):
+    if not request.user.is_staff:
+        messages.error(request, 'Acesso não autorizado.')
+        return redirect('books:list')
+    appt = get_object_or_404(Appointment, pk=pk)
+    if appt.status not in ('PENDING', 'CONFIRMED'):
+        messages.error(request, 'Este agendamento não pode ser cancelado.')
+        return redirect('books:all_appointments')
+    if request.method == 'POST':
+        reason = request.POST.get('reason', '')
+        appt.status = 'CANCELLED'
+        appt.cancel_reason = reason
+        appt.save()
+        ActionLog.log(user=request.user, action='OTHER',
+                      description=f'Agendamento cancelado pelo salão: {appt}',
+                      request=request)
+        messages.warning(request, 'Agendamento cancelado.')
+    return redirect('books:all_appointments')
+
+
+@login_required
+def complete_appointment(request, pk):
+    if not request.user.is_staff:
+        messages.error(request, 'Acesso não autorizado.')
+        return redirect('books:list')
+    appt = get_object_or_404(Appointment, pk=pk, status='CONFIRMED')
+    if request.method == 'POST':
+        appt.status = 'COMPLETED'
+        appt.internal_notes = request.POST.get('internal_notes', appt.internal_notes)
+        appt.save()
+        ActionLog.log(user=request.user, action='OTHER',
+                      description=f'Serviço concluído: {appt}', request=request)
+        messages.success(request, 'Serviço marcado como concluído!')
+    return redirect('books:all_appointments')
+
+
+@login_required
+def no_show_appointment(request, pk):
+    if not request.user.is_staff:
+        messages.error(request, 'Acesso não autorizado.')
+        return redirect('books:list')
+    appt = get_object_or_404(Appointment, pk=pk)
+    if request.method == 'POST':
+        appt.status = 'NO_SHOW'
+        appt.save()
+        messages.warning(request, 'Agendamento marcado como não compareceu.')
+    return redirect('books:all_appointments')
+
+
+@login_required
+def service_create(request):
+    if not request.user.is_staff:
+        messages.error(request, 'Acesso não autorizado.')
+        return redirect('books:list')
+    form = ServiceForm(request.POST or None, request.FILES or None)
+    if request.method == 'POST' and form.is_valid():
+        service = form.save()
+        messages.success(request, f'Serviço "{service.name}" cadastrado!')
+        return redirect('books:list')
+    return render(request, 'books/service_form.html', {'form': form, 'action': 'Cadastrar'})
+
+
+@login_required
+def service_edit(request, pk):
+    if not request.user.is_staff:
+        messages.error(request, 'Acesso não autorizado.')
+        return redirect('books:list')
+    service = get_object_or_404(Service, pk=pk)
+    form = ServiceForm(request.POST or None, request.FILES or None, instance=service)
+    if request.method == 'POST' and form.is_valid():
+        instance = form.save(commit=False)
+        if not request.FILES.get('image') and not request.POST.get('image_clear'):
+            instance.image = service.image
+        elif request.POST.get('image_clear'):
+            instance.image = None
+        instance.save()
+        messages.success(request, f'Serviço "{service.name}" atualizado!')
+        return redirect('books:list')
+    return render(request, 'books/service_form.html',
+                  {'form': form, 'service': service, 'action': 'Editar'})
+
+
+@login_required
+def service_delete(request, pk):
+    if not request.user.is_staff:
+        messages.error(request, 'Acesso não autorizado.')
+        return redirect('books:list')
+    service = get_object_or_404(Service, pk=pk)
+    if request.method == 'POST':
+        service.is_active = False
+        service.save()
+        messages.success(request, f'Serviço "{service.name}" desativado.')
+        return redirect('books:list')
+    return render(request, 'books/confirm_delete.html', {'service': service})
+
+
+@login_required
+def professionals_list(request):
+    if not request.user.is_staff:
+        messages.error(request, 'Acesso não autorizado.')
+        return redirect('books:list')
+    professionals = Professional.objects.filter(
+        is_active=True).select_related('user').prefetch_related('services')
+    return render(request, 'books/professionals.html', {'professionals': professionals})
+
+
+@login_required
+def salon_config(request):
+    if not request.user.is_staff:
+        messages.error(request, 'Acesso não autorizado.')
+        return redirect('books:list')
+    config = SalonConfig.get()
+    form = SalonConfigForm(request.POST or None, instance=config)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Configurações salvas!')
+        return redirect('books:salon_config')
+    return render(request, 'books/library_config.html', {'form': form, 'config': config})

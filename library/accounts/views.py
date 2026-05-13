@@ -100,17 +100,16 @@ def token_view(request):
         messages.success(request, 'Token regenerado com sucesso!')
         return redirect('accounts:token')
 
-    # Montar lista de endpoints de analytics disponíveis
     is_admin = request.user.is_staff
     host = request.build_absolute_uri('/').rstrip('/')
     analytics_endpoints = [
-        {'path': '/api/analytics/summary/',      'desc': 'KPIs gerais do sistema',             'admin': True},
-        {'path': '/api/analytics/books/',        'desc': 'Acervo com estatísticas completas',  'admin': False},
-        {'path': '/api/analytics/categories/',   'desc': 'Estatísticas por categoria',         'admin': False},
-        {'path': '/api/analytics/reservations/', 'desc': 'Todas as reservas com detalhes',     'admin': False},
-        {'path': '/api/analytics/ratings/',      'desc': 'Avaliações com dados de usuário',    'admin': False},
-        {'path': '/api/analytics/users/',        'desc': 'Perfil e atividade dos usuários',    'admin': True},
-        {'path': '/api/analytics/logs/',         'desc': 'Logs de ações dos usuários',         'admin': True},
+        {'path': '/api/analytics/summary/',       'desc': 'KPIs e receita do salão',                'admin': True},
+        {'path': '/api/analytics/services/',      'desc': 'Serviços com estatísticas de agendamento', 'admin': False},
+        {'path': '/api/analytics/categories/',    'desc': 'Estatísticas por categoria de serviço',   'admin': False},
+        {'path': '/api/analytics/appointments/',  'desc': 'Agendamentos com detalhes completos',     'admin': False},
+        {'path': '/api/analytics/professionals/', 'desc': 'Desempenho por profissional',             'admin': True},
+        {'path': '/api/analytics/users/',         'desc': 'Clientes com histórico de agendamentos',  'admin': True},
+        {'path': '/api/analytics/logs/',          'desc': 'Logs de ações dos usuários',              'admin': True},
     ]
     endpoints = [e for e in analytics_endpoints if not e['admin'] or is_admin]
 

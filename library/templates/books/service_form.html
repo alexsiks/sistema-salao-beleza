@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% block title %}{{ action }} Serviço — {{ config.salon_name }}{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <div class="d-flex align-items-center mb-4 gap-3">
+      <div class="p-3 rounded-3" style="background:var(--salon-light);">
+        <i class="bi bi-scissors fs-3" style="color:var(--salon-primary)"></i>
+      </div>
+      <div>
+        <h2 class="fw-bold mb-0">{{ action }} Serviço</h2>
+        {% if service %}<p class="text-muted mb-0">{{ service.name }}</p>{% endif %}
+      </div>
+    </div>
+
+    <div class="card p-4">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-semibold">Nome do Serviço *</label>
+            <input type="text" name="name" class="form-control"
+                   value="{{ form.instance.name }}" required placeholder="Ex: Corte Feminino">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold"><i class="bi bi-tag me-1"></i>Categoria</label>
+            <select name="category" class="form-select">
+              <option value="">Sem categoria</option>
+              {% for cat in form.fields.category.queryset %}
+              <option value="{{ cat.pk }}"
+                {% if form.instance.category_id == cat.pk %}selected{% endif %}>{{ cat.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold"><i class="bi bi-clock me-1"></i>Duração (min) *</label>
+            <input type="number" name="duration_minutes" class="form-control"
+                   value="{{ form.instance.duration_minutes|default:60 }}"
+                   min="1" required>
+          </div>
+          <div class="col-md-3">
+            <label class="form-label fw-semibold"><i class="bi bi-currency-dollar me-1"></i>Preço (R$) *</label>
+            <div class="input-group">
+              <span class="input-group-text">R$</span>
+              <input type="number" name="price" class="form-control"
+                     value="{{ form.instance.price|default:'0.00' }}"
+                     min="0" step="0.01" required>
+            </div>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Descrição *</label>
+            <textarea name="description" class="form-control" rows="4" required
+                      placeholder="Descreva o serviço para os clientes...">{{ form.instance.description }}</textarea>
+          </div>
+
+          <!-- Imagem -->
+          <div class="col-12">
+            <label class="form-label fw-semibold"><i class="bi bi-image me-1"></i>Foto do Serviço</label>
+            {% if form.instance.image %}
+            <div class="d-flex align-items-start gap-3 mb-2 p-3 bg-light rounded-3">
+              <img src="{{ form.instance.image.url }}" alt="Foto atual"
+                   style="height:100px;width:120px;object-fit:cover;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.1);">
+              <div>
+                <p class="fw-semibold mb-1 small">Foto atual</p>
+                <p class="text-muted small mb-2">Selecione uma nova para substituir</p>
+                <div class="form-check">
+                  <input class="form-check-input" type="checkbox" name="image_clear" id="imgClear" value="1">
+                  <label class="form-check-label text-danger small fw-semibold" for="imgClear">
+                    <i class="bi bi-trash me-1"></i>Remover foto atual
+                  </label>
+                </div>
+              </div>
+            </div>
+            {% endif %}
+            <div class="border-2 border-dashed rounded-3 p-3 text-center"
+                 style="border: 2px dashed #dee2e6; cursor:pointer;"
+                 onclick="document.getElementById('imgInput').click()">
+              <i class="bi bi-cloud-upload fs-3 text-muted"></i>
+              <p class="text-muted small mb-0 mt-1">Clique para selecionar imagem · JPG, PNG, WEBP</p>
+              <p id="imgFileName" class="text-primary small fw-semibold mt-1 mb-0" style="display:none;"></p>
+            </div>
+            <input type="file" name="image" id="imgInput" class="d-none"
+                   accept="image/jpeg,image/png,image/webp,image/gif">
+          </div>
+
+          <div class="col-12">
+            <div class="form-check form-switch">
+              <input class="form-check-input" type="checkbox" name="is_active" id="isActive"
+                     {% if form.instance.is_active or not form.instance.pk %}checked{% endif %}>
+              <label class="form-check-label fw-semibold" for="isActive">Serviço ativo (visível para clientes)</label>
+            </div>
+          </div>
+        </div>
+
+        {% if form.errors %}
+        <div class="alert alert-danger mt-3">
+          {% for field in form %}{% for e in field.errors %}<div>{{ field.label }}: {{ e }}</div>{% endfor %}{% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="d-flex gap-2 mt-4">
+          <button type="submit" class="btn btn-salon px-4 fw-semibold">
+            <i class="bi bi-check-circle me-2"></i>{{ action }} Serviço
+          </button>
+          <a href="{% url 'books:list' %}" class="btn btn-outline-secondary px-4">Cancelar</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('imgInput').addEventListener('change', function() {
+  const f = this.files[0];
+  if (f) {
+    document.getElementById('imgFileName').textContent = f.name;
+    document.getElementById('imgFileName').style.display = 'block';
+  }
+});
+</script>
+{% endblock %}

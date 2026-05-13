@@ -1,18 +1,25 @@
 {% extends 'base.html' %}
-{% block title %}Excluir Livro — Biblioteca{% endblock %}
+{% block title %}Desativar Serviço — {{ service.name }}{% endblock %}
 {% block content %}
 <div class="row justify-content-center">
   <div class="col-md-6">
     <div class="card p-4 text-center">
-      <i class="bi bi-exclamation-triangle display-3 text-danger mb-3"></i>
-      <h4 class="fw-bold">Confirmar Exclusão</h4>
-      <p class="text-muted">Tem certeza que deseja excluir o livro <strong>{{ book.title }}</strong>?<br>Esta ação não pode ser desfeita.</p>
-      <div class="d-flex justify-content-center gap-3 mt-3">
+      <div class="mb-3">
+        <i class="bi bi-exclamation-triangle-fill display-4 text-warning"></i>
+      </div>
+      <h4 class="fw-bold mb-2">Desativar Serviço</h4>
+      <p class="text-muted mb-4">
+        Tem certeza que deseja desativar <strong>{{ service.name }}</strong>?
+        O serviço não aparecerá mais para novos agendamentos.
+      </p>
+      <div class="d-flex gap-3 justify-content-center">
         <form method="post">
           {% csrf_token %}
-          <button type="submit" class="btn btn-danger px-4"><i class="bi bi-trash me-2"></i>Sim, Excluir</button>
+          <button type="submit" class="btn btn-danger px-4">
+            <i class="bi bi-eye-slash me-2"></i>Sim, Desativar
+          </button>
         </form>
-        <a href="{% url 'books:detail' book.pk %}" class="btn btn-outline-secondary px-4">Cancelar</a>
+        <a href="{% url 'books:list' %}" class="btn btn-outline-secondary px-4">Cancelar</a>
       </div>
     </div>
   </div>

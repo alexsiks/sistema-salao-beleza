@@ -2,22 +2,23 @@ from django.urls import path
 from . import api_views
 
 urlpatterns = [
-    path('config/', api_views.LibraryConfigAPIView.as_view(), name='api_library_config'),
+    path('config/', api_views.SalonConfigAPIView.as_view(), name='api_salon_config'),
 
-    path('books/', api_views.BookListAPIView.as_view(), name='api_book_list'),
-    path('books/<int:pk>/', api_views.BookDetailAPIView.as_view(), name='api_book_detail'),
-    path('books/<int:pk>/reserve/', api_views.ReserveBookAPIView.as_view(), name='api_book_reserve'),
-    path('books/<int:pk>/comment/', api_views.CommentAPIView.as_view(), name='api_book_comment'),
-    path('books/<int:pk>/rate/', api_views.RateBookAPIView.as_view(), name='api_book_rate'),
+    path('categories/', api_views.ServiceCategoryListAPIView.as_view(), name='api_categories'),
 
-    path('reservations/', api_views.ReservationListAPIView.as_view(), name='api_reservations'),
-    path('reservations/<int:pk>/cancel/', api_views.CancelReservationAPIView.as_view(), name='api_cancel_reservation'),
-    path('reservations/<int:pk>/confirm/', api_views.ConfirmLoanAPIView.as_view(), name='api_confirm_loan'),
-    path('reservations/<int:pk>/reject/', api_views.RejectReservationAPIView.as_view(), name='api_reject_reservation'),
-    path('reservations/<int:pk>/return/', api_views.ReturnBookAPIView.as_view(), name='api_return_book'),
-    path('reservations/<int:pk>/fine-paid/', api_views.MarkFinePaidAPIView.as_view(), name='api_fine_paid'),
+    path('services/', api_views.ServiceListAPIView.as_view(), name='api_services'),
+    path('services/<int:pk>/', api_views.ServiceDetailAPIView.as_view(), name='api_service_detail'),
 
-    path('financial/', api_views.LoanFinancialSummaryAPIView.as_view(), name='api_financial_summary'),
+    path('professionals/', api_views.ProfessionalListAPIView.as_view(), name='api_professionals'),
 
-    path('categories/', api_views.CategoryListAPIView.as_view(), name='api_categories'),
+    path('available-slots/', api_views.AvailableSlotsAPIView.as_view(), name='api_available_slots'),
+
+    path('appointments/', api_views.AppointmentListAPIView.as_view(), name='api_appointments'),
+    path('appointments/<int:pk>/', api_views.AppointmentDetailAPIView.as_view(), name='api_appointment_detail'),
+    path('appointments/book/', api_views.BookAppointmentAPIView.as_view(), name='api_book'),
+    path('appointments/<int:pk>/confirm/', api_views.ConfirmAppointmentAPIView.as_view(), name='api_confirm'),
+    path('appointments/<int:pk>/cancel/', api_views.CancelAppointmentAPIView.as_view(), name='api_cancel'),
+    path('appointments/<int:pk>/complete/', api_views.CompleteAppointmentAPIView.as_view(), name='api_complete'),
+
+    path('financial/', api_views.FinancialSummaryAPIView.as_view(), name='api_financial'),
 ]

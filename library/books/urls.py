@@ -4,20 +4,24 @@ from . import views
 app_name = 'books'
 
 urlpatterns = [
-    path('', views.book_list, name='list'),
-    path('<int:pk>/', views.book_detail, name='detail'),
-    path('create/', views.book_create, name='create'),
-    path('<int:pk>/edit/', views.book_edit, name='edit'),
-    path('<int:pk>/delete/', views.book_delete, name='delete'),
-    path('<int:pk>/reserve/', views.book_reserve, name='reserve'),
-    path('<int:pk>/comment/', views.add_comment, name='comment'),
-    path('<int:pk>/rate/', views.add_rating, name='rate'),
-    path('my-loans/', views.my_reservations, name='my_reservations'),
-    path('loan/<int:pk>/cancel/', views.cancel_reservation, name='cancel_reservation'),
-    path('loan/<int:pk>/confirm/', views.confirm_loan, name='confirm_loan'),
-    path('loan/<int:pk>/reject/', views.reject_reservation, name='reject_reservation'),
-    path('loan/<int:pk>/return/', views.return_book, name='return_book'),
-    path('loan/<int:pk>/fine-paid/', views.mark_fine_paid, name='mark_fine_paid'),
-    path('loans/', views.all_reservations, name='all_reservations'),
-    path('config/', views.library_config, name='library_config'),
+    path('', views.service_list, name='list'),
+    path('<int:pk>/', views.service_detail, name='detail'),
+    path('<int:pk>/agendar/', views.book_appointment, name='book'),
+    path('meus-agendamentos/', views.my_appointments, name='my_appointments'),
+    path('agendamento/<int:pk>/cancelar/', views.cancel_appointment, name='cancel_appointment'),
+
+    # Admin
+    path('servico/cadastrar/', views.service_create, name='service_create'),
+    path('servico/<int:pk>/editar/', views.service_edit, name='service_edit'),
+    path('servico/<int:pk>/excluir/', views.service_delete, name='service_delete'),
+    path('agendamentos/', views.all_appointments, name='all_appointments'),
+    path('agendamento/<int:pk>/confirmar/', views.confirm_appointment, name='confirm_appointment'),
+    path('agendamento/<int:pk>/cancelar-admin/', views.reject_appointment, name='reject_appointment'),
+    path('agendamento/<int:pk>/concluir/', views.complete_appointment, name='complete_appointment'),
+    path('agendamento/<int:pk>/nao-compareceu/', views.no_show_appointment, name='no_show'),
+    path('profissionais/', views.professionals_list, name='professionals'),
+    path('configuracoes/', views.salon_config, name='salon_config'),
+
+    # AJAX
+    path('horarios-disponiveis/', views.available_slots_api, name='available_slots'),
 ]

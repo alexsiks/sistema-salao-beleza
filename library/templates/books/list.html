@@ -1,91 +1,119 @@
 {% extends 'base.html' %}
-{% block title %}Acervo — Biblioteca{% endblock %}
+{% block title %}Nossos Serviços — {{ config.salon_name }}{% endblock %}
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h2 class="fw-bold"><i class="bi bi-collection me-2"></i>Acervo</h2>
-  {% if user.is_staff %}
-  <a href="{% url 'books:create' %}" class="btn btn-primary">
-    <i class="bi bi-plus-circle me-2"></i>Cadastrar Livro
-  </a>
-  {% endif %}
+
+<!-- Hero -->
+<div class="salon-hero mb-5">
+  <div class="row align-items-center">
+    <div class="col-md-8">
+      <h1 class="fw-bold mb-2"><i class="bi bi-scissors me-2"></i>{{ config.salon_name }}</h1>
+      <p class="mb-3 opacity-90 fs-5">Agende seu horário com facilidade. Serviços de qualidade, para você se sentir incrível.</p>
+      {% if user.is_authenticated %}
+      <a href="#servicos" class="btn btn-light fw-bold px-4" style="color:var(--salon-primary)!important">
+        <i class="bi bi-calendar-plus me-2"></i>Agendar Agora
+      </a>
+      {% else %}
+      <a href="{% url 'accounts:register' %}" class="btn btn-light fw-bold px-4 me-2" style="color:var(--salon-primary)!important">
+        <i class="bi bi-person-plus me-2"></i>Cadastrar-se
+      </a>
+      <a href="{% url 'accounts:login' %}" class="btn btn-outline-light px-4">Entrar</a>
+      {% endif %}
+    </div>
+    <div class="col-md-4 text-center d-none d-md-block">
+      <i class="bi bi-scissors" style="font-size:7rem;opacity:.2;"></i>
+    </div>
+  </div>
 </div>
 
-<form method="get" class="card p-3 mb-4">
-  <div class="row g-2 align-items-end">
+<!-- Filtros -->
+<div id="servicos" class="card p-3 mb-4">
+  <form method="get" class="row g-2 align-items-end">
     <div class="col-md-5">
       <label class="form-label fw-semibold small">Pesquisar</label>
       <div class="input-group">
         <span class="input-group-text"><i class="bi bi-search"></i></span>
-        <input type="text" name="q" class="form-control" placeholder="Título, autor..." value="{{ q }}">
+        <input type="text" name="q" class="form-control" value="{{ q }}" placeholder="Nome do serviço...">
       </div>
     </div>
-    <div class="col-md-3">
+    <div class="col-md-4">
       <label class="form-label fw-semibold small">Categoria</label>
       <select name="category" class="form-select">
-        <option value="">Todas</option>
+        <option value="">Todas as categorias</option>
         {% for cat in categories %}
-        <option value="{{ cat.id }}" {% if category_id == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+        <option value="{{ cat.id }}" {% if cat_id == cat.id|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
         {% endfor %}
       </select>
     </div>
-    <div class="col-md-2">
-      <label class="form-label fw-semibold small">Disponibilidade</label>
-      <select name="available" class="form-select">
-        <option value="">Todos</option>
-        <option value="1" {% if available == "1" %}selected{% endif %}>Disponíveis</option>
-      </select>
+    <div class="col-md-3 d-flex gap-2">
+      <button type="submit" class="btn btn-salon w-100">Filtrar</button>
+      <a href="{% url 'books:list' %}" class="btn btn-outline-secondary w-100">Limpar</a>
     </div>
-    <div class="col-md-2">
-      <button type="submit" class="btn btn-primary w-100">Filtrar</button>
-      {% if q or category_id or available %}
-      <a href="{% url 'books:list' %}" class="btn btn-outline-secondary w-100 mt-1">Limpar</a>
-      {% endif %}
-    </div>
-  </div>
-</form>
+  </form>
+</div>
+
+{% if user.is_staff %}
+<div class="d-flex justify-content-end mb-3">
+  <a href="{% url 'books:service_create' %}" class="btn btn-salon">
+    <i class="bi bi-plus-circle me-2"></i>Novo Serviço
+  </a>
+</div>
+{% endif %}
 
 <div class="row g-4">
-  {% for book in books %}
-  <div class="col-sm-6 col-md-4 col-lg-3">
-    <div class="card h-100">
-      <a href="{% url 'books:detail' book.pk %}">
-        {% if book.cover_image %}
-        <img src="{{ book.cover_image.url }}" class="book-cover card-img-top" alt="{{ book.title }}">
-        {% else %}
-        <div class="book-cover-placeholder"><i class="bi bi-book"></i></div>
-        {% endif %}
-      </a>
+  {% for service in services %}
+  <div class="col-sm-6 col-lg-4">
+    <div class="card service-card h-100">
+      {% if service.image %}
+      <img src="{{ service.image.url }}" alt="{{ service.name }}" class="service-img">
+      {% else %}
+      <div class="service-img-placeholder">
+        <i class="bi bi-{% if service.category %}{{ service.category.icon }}{% else %}scissors{% endif %}" style="font-size:3.5rem;color:var(--salon-primary);opacity:.5;"></i>
+      </div>
+      {% endif %}
       <div class="card-body d-flex flex-column">
-        <h6 class="card-title fw-bold mb-1">
-          <a href="{% url 'books:detail' book.pk %}" class="text-decoration-none text-dark">{{ book.title }}</a>
-        </h6>
-        <p class="text-muted small mb-2">{{ book.author }}</p>
-        {% if book.average_rating %}
-        <div class="mb-1">
-          {% for i in "12345" %}
-          <i class="bi bi-star{% if forloop.counter <= book.average_rating %}-fill star{% else %} star-empty{% endif %} small"></i>
-          {% endfor %}
-          <small class="text-muted ms-1">{{ book.average_rating }}/5</small>
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <h5 class="fw-bold mb-0">{{ service.name }}</h5>
+          {% if service.category %}
+          <span class="badge badge-salon small">{{ service.category.name }}</span>
+          {% endif %}
         </div>
-        {% endif %}
-        <div class="mt-auto">
-          {% for cat in book.categories.all %}<span class="badge bg-light text-secondary me-1 small">{{ cat.name }}</span>{% endfor %}
-          <div class="mt-2">
-            {% if book.is_available %}
-            <span class="badge badge-available"><i class="bi bi-check-circle me-1"></i>{{ book.available_copies }} disponível(is)</span>
+        <p class="text-muted small flex-grow-1">{{ service.description|truncatechars:90 }}</p>
+        <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top">
+          <div>
+            <div class="fw-bold fs-5" style="color:var(--salon-primary)">R$ {{ service.price }}</div>
+            <div class="small text-muted"><i class="bi bi-clock me-1"></i>{{ service.duration_display }}</div>
+          </div>
+          <div class="d-flex gap-2">
+            <a href="{% url 'books:detail' service.pk %}" class="btn btn-sm btn-salon-outline">Ver mais</a>
+            {% if user.is_authenticated %}
+            <a href="{% url 'books:book' service.pk %}" class="btn btn-sm btn-salon">
+              <i class="bi bi-calendar-plus me-1"></i>Agendar
+            </a>
             {% else %}
-            <span class="badge badge-unavailable"><i class="bi bi-x-circle me-1"></i>Indisponível</span>
+            <a href="{% url 'accounts:login' %}" class="btn btn-sm btn-salon">Agendar</a>
             {% endif %}
           </div>
         </div>
+        {% if user.is_staff %}
+        <div class="d-flex gap-1 mt-2 pt-2 border-top">
+          <a href="{% url 'books:service_edit' service.pk %}" class="btn btn-sm btn-outline-secondary flex-grow-1">
+            <i class="bi bi-pencil"></i> Editar
+          </a>
+          <a href="{% url 'books:service_delete' service.pk %}" class="btn btn-sm btn-outline-danger flex-grow-1">
+            <i class="bi bi-trash"></i>
+          </a>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>
   {% empty %}
   <div class="col-12 text-center py-5">
-    <i class="bi bi-book display-1 text-muted"></i>
-    <h4 class="mt-3 text-muted">Nenhum livro encontrado</h4>
-    {% if user.is_staff %}<a href="{% url 'books:create' %}" class="btn btn-primary mt-2">Cadastrar primeiro livro</a>{% endif %}
+    <i class="bi bi-scissors display-1 text-muted"></i>
+    <h4 class="mt-3 text-muted">Nenhum serviço encontrado</h4>
+    {% if user.is_staff %}
+    <a href="{% url 'books:service_create' %}" class="btn btn-salon mt-2">Cadastrar Primeiro Serviço</a>
+    {% endif %}
   </div>
   {% endfor %}
 </div>

@@ -2,396 +2,101 @@
 {% block title %}API REST — Documentação{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-  <div class="row">
+<div class="row">
+  <!-- Sidebar -->
+  <div class="col-lg-3 d-none d-lg-block">
+    <div class="card p-3 sticky-top" style="top:80px;">
+      <div class="fw-bold mb-2" style="color:var(--salon-primary)">
+        <i class="bi bi-lightning-charge me-1"></i>Endpoints
+      </div>
+      <ul class="list-unstyled small mb-0">
+        <li><a href="#auth" class="text-decoration-none text-muted">Autenticação</a></li>
+        <li><a href="#config" class="text-decoration-none text-muted">Configuração</a></li>
+        <li><a href="#services" class="text-decoration-none text-muted">Serviços</a></li>
+        <li><a href="#professionals" class="text-decoration-none text-muted">Profissionais</a></li>
+        <li><a href="#slots" class="text-decoration-none text-muted">Horários</a></li>
+        <li><a href="#appointments" class="text-decoration-none text-muted">Agendamentos</a></li>
+        <li><a href="#financial" class="text-decoration-none text-muted">Financeiro</a></li>
+        <li><a href="#users" class="text-decoration-none text-muted">Usuários</a></li>
+      </ul>
+    </div>
+  </div>
 
-    <!-- Sidebar navigation -->
-    <div class="col-lg-3 d-none d-lg-block">
-      <div class="sticky-top pt-2" style="top: 80px;">
-        <div class="card border-0 shadow-sm">
-          <div class="card-body p-3">
-            <h6 class="text-uppercase fw-bold text-muted small mb-3">Navegação</h6>
-            <nav class="nav flex-column gap-1">
-              <a class="nav-link py-1 px-2 rounded" href="#section-intro">Introdução</a>
-              <a class="nav-link py-1 px-2 rounded" href="#section-auth-endpoints">Autenticação</a>
-              <a class="nav-link py-1 px-2 rounded" href="#section-users">Usuários</a>
-              <a class="nav-link py-1 px-2 rounded" href="#section-books">Livros</a>
-              <a class="nav-link py-1 px-2 rounded" href="#section-config">Configuração</a>
-              <a class="nav-link py-1 px-2 rounded" href="#section-reservations">Empréstimos</a>
-              <a class="nav-link py-1 px-2 rounded" href="#section-financial">Financeiro</a>
-              <a class="nav-link py-1 px-2 rounded" href="#section-categories">Categorias</a>
-              <a class="nav-link py-1 px-2 rounded" href="#section-analytics">Analytics</a>
-              <a class="nav-link py-1 px-2 rounded" href="#section-logs">Logs</a>
-              <a class="nav-link py-1 px-2 rounded" href="#section-tester">Testador</a>
-            </nav>
-          </div>
-        </div>
+  <div class="col-lg-9">
+    <div class="mb-4">
+      <h2 class="fw-bold"><i class="bi bi-lightning-charge me-2" style="color:var(--salon-accent)"></i>API REST — Salão de Beleza</h2>
+      <p class="text-muted">API completa para integração com o sistema de agendamento.</p>
+      <div class="card p-3" style="background:var(--salon-light);border:none;">
+        <strong>Base URL:</strong> <code>{{ request.build_absolute_uri('/') }}api/</code><br>
+        <strong>Autenticação:</strong> <code>Authorization: Token &lt;seu_token&gt;</code><br>
+        <strong>Formato:</strong> JSON
       </div>
     </div>
 
-    <!-- Main content -->
-    <div class="col-lg-9">
+    <!-- AUTH -->
+    <h4 id="auth" class="fw-bold mt-4 mb-3" style="color:var(--salon-primary)">
+      <i class="bi bi-shield-lock me-2"></i>Autenticação
+    </h4>
+    {% include 'api_endpoint.html' with method="POST" path="/api/auth/login/" description="Login — retorna token de autenticação" request_example='{"username": "ana_silva", "password": "prof123"}' response_example='{"token": "abc123...", "user_id": 2, "username": "ana_silva"}' %}
+    {% include 'api_endpoint.html' with method="POST" path="/api/auth/register/" description="Cadastrar novo usuário" request_example='{"username": "cliente1", "password": "senha123", "email": "cliente@email.com", "first_name": "João"}' response_example='{"token": "...", "message": "Usuário criado com sucesso"}' %}
+    {% include 'api_endpoint.html' with method="POST" path="/api/auth/logout/" description="Logout — invalida token" auth=True %}
+    {% include 'api_endpoint.html' with method="GET"  path="/api/auth/token/" description="Ver token atual do usuário autenticado" auth=True response_example='{"token": "abc123..."}' %}
 
-      <!-- Header -->
-      <div class="d-flex align-items-center mb-2">
-        <span class="display-6 me-3">⚡</span>
-        <div>
-          <h1 class="h2 mb-0 fw-bold">API REST — Sistema de Biblioteca</h1>
-          <p class="text-muted mb-0">Versão 1.0 &nbsp;·&nbsp; Autenticação por Token &nbsp;·&nbsp; JSON</p>
-        </div>
-      </div>
+    <!-- CONFIG -->
+    <h4 id="config" class="fw-bold mt-4 mb-3" style="color:var(--salon-primary)">
+      <i class="bi bi-sliders me-2"></i>Configuração do Salão
+    </h4>
+    {% include 'api_endpoint.html' with method="GET"   path="/api/config/" description="Ver configurações do salão (horário, intervalo, etc.)" auth=True response_example='{"salon_name": "Espaço Beleza", "open_time": "09:00:00", "close_time": "18:00:00", "slot_minutes": 30}' %}
+    {% include 'api_endpoint.html' with method="PATCH" path="/api/config/" description="Atualizar configurações (admin)" auth=True admin=True request_example='{"open_time": "08:00", "close_time": "19:00"}' %}
 
-      <!-- Token alert -->
-      {% if user.is_authenticated %}
-      <div class="alert alert-success border-0 d-flex align-items-center gap-3 mb-4" id="token-alert">
-        <span class="fs-4">🔑</span>
-        <div class="flex-grow-1">
-          <strong>Seu token de acesso:</strong><br>
-          <code id="user-token" class="fs-6">{{ token }}</code>
-        </div>
-        <div class="d-flex gap-2 flex-shrink-0">
-          <button class="btn btn-sm btn-outline-success" onclick="copyToken()">Copiar</button>
-          <button class="btn btn-sm btn-warning" onclick="regenerateToken()">Regenerar</button>
-        </div>
-      </div>
-      {% else %}
-      <div class="alert alert-warning border-0 mb-4">
-        <span class="me-2">⚠️</span>
-        <strong>Você não está logado.</strong>
-        <a href="{% url 'accounts:login' %}" class="alert-link ms-1">Faça login</a> para ver seu token de acesso.
-      </div>
-      {% endif %}
+    <!-- SERVICES -->
+    <h4 id="services" class="fw-bold mt-4 mb-3" style="color:var(--salon-primary)">
+      <i class="bi bi-scissors me-2"></i>Serviços
+    </h4>
+    {% include 'api_endpoint.html' with method="GET"  path="/api/services/" description="Listar serviços ativos (filtros: q, category, active=0/1)" auth=True response_example='[{"id":1,"name":"Corte Feminino","price":"80.00","duration_minutes":60,"duration_display":"1h"}]' %}
+    {% include 'api_endpoint.html' with method="GET"  path="/api/services/<id>/" description="Detalhes de um serviço" auth=True %}
+    {% include 'api_endpoint.html' with method="POST" path="/api/services/" description="Criar novo serviço (admin)" auth=True admin=True request_example='{"name":"Nail Art","description":"...","duration_minutes":60,"price":"60.00","category":1}' %}
+    {% include 'api_endpoint.html' with method="PATCH" path="/api/services/<id>/" description="Atualizar serviço (admin)" auth=True admin=True %}
+    {% include 'api_endpoint.html' with method="GET"  path="/api/categories/" description="Listar categorias de serviços" auth=True %}
 
-      <!-- Section: Intro -->
-      <section id="section-intro" class="mb-5">
-        <h3 class="fw-bold border-bottom pb-2 mb-3">Introdução</h3>
-        <p>A API REST do Sistema de Biblioteca permite acesso programático ao acervo, reservas e usuários. Todos os dados são retornados em formato <strong>JSON</strong>.</p>
+    <!-- PROFESSIONALS -->
+    <h4 id="professionals" class="fw-bold mt-4 mb-3" style="color:var(--salon-primary)">
+      <i class="bi bi-people me-2"></i>Profissionais
+    </h4>
+    {% include 'api_endpoint.html' with method="GET" path="/api/professionals/" description="Listar profissionais ativos (filtro: service=<id>)" auth=True response_example='[{"id":1,"full_name":"Ana Silva","bio":"...","services":[...]}]' %}
 
-        <h6 class="fw-semibold mt-4">URL Base</h6>
-        <div class="code-block">{{ base_url }}/api/</div>
+    <!-- SLOTS -->
+    <h4 id="slots" class="fw-bold mt-4 mb-3" style="color:var(--salon-primary)">
+      <i class="bi bi-clock me-2"></i>Horários Disponíveis
+    </h4>
+    {% include 'api_endpoint.html' with method="GET" path="/api/available-slots/?service=1&date=2025-06-15" description="Horários disponíveis para um serviço e data. Parâmetro opcional: professional=<id>" auth=True response_example='{"date":"2025-06-15","service":"Corte Feminino","duration_minutes":60,"slots":["09:00","10:00","11:00","14:00"]}' %}
 
-        <h6 class="fw-semibold mt-4">Autenticação</h6>
-        <p>Envie o header <code>Authorization</code> em todas as requisições autenticadas:</p>
-        <div class="code-block">Authorization: Token <span class="text-warning">&lt;seu_token&gt;</span></div>
+    <!-- APPOINTMENTS -->
+    <h4 id="appointments" class="fw-bold mt-4 mb-3" style="color:var(--salon-primary)">
+      <i class="bi bi-calendar-check me-2"></i>Agendamentos
+    </h4>
+    {% include 'api_endpoint.html' with method="GET"  path="/api/appointments/" description="Listar agendamentos (cliente vê os próprios; admin vê todos). Filtros: status, date, upcoming=1" auth=True %}
+    {% include 'api_endpoint.html' with method="POST" path="/api/appointments/book/" description="Criar novo agendamento" auth=True request_example='{"service":1,"professional":2,"date":"2025-06-15","start_time":"09:00","notes":"Cabelo muito longo"}' response_example='{"id":1,"service_name":"Corte Feminino","date":"2025-06-15","start_time":"09:00:00","status":"PENDING"}' %}
+    {% include 'api_endpoint.html' with method="GET"  path="/api/appointments/<id>/" description="Detalhes de um agendamento" auth=True %}
+    {% include 'api_endpoint.html' with method="POST" path="/api/appointments/<id>/confirm/" description="Confirmar agendamento pendente (admin)" auth=True admin=True %}
+    {% include 'api_endpoint.html' with method="POST" path="/api/appointments/<id>/cancel/" description="Cancelar agendamento (cliente: com antecedência mínima; admin: qualquer)" auth=True request_example='{"reason":"Motivo do cancelamento"}' %}
+    {% include 'api_endpoint.html' with method="POST" path="/api/appointments/<id>/complete/" description="Marcar serviço como concluído (admin)" auth=True admin=True %}
 
-        <h6 class="fw-semibold mt-4">Exemplo com cURL</h6>
-        <div class="code-block">curl -H "Authorization: Token <span class="text-warning">&lt;seu_token&gt;</span>" \
-     {{ base_url }}/api/books/</div>
+    <!-- FINANCIAL -->
+    <h4 id="financial" class="fw-bold mt-4 mb-3" style="color:var(--salon-primary)">
+      <i class="bi bi-graph-up me-2"></i>Financeiro (admin)
+    </h4>
+    {% include 'api_endpoint.html' with method="GET" path="/api/financial/" description="Resumo financeiro e estatísticas de agendamentos" auth=True admin=True response_example='{"receita_total":"1250.00","agendamentos_hoje":5,"agendamentos_pendentes":3,"agendamentos_concluidos":42}' %}
 
-        <h6 class="fw-semibold mt-4">Códigos de Resposta</h6>
-        <div class="table-responsive">
-          <table class="table table-sm table-bordered">
-            <thead class="table-dark"><tr><th>Código</th><th>Significado</th></tr></thead>
-            <tbody>
-              <tr><td><span class="badge bg-success">200</span></td><td>OK — Requisição bem-sucedida</td></tr>
-              <tr><td><span class="badge bg-primary">201</span></td><td>Created — Recurso criado</td></tr>
-              <tr><td><span class="badge bg-warning text-dark">400</span></td><td>Bad Request — Dados inválidos</td></tr>
-              <tr><td><span class="badge bg-danger">401</span></td><td>Unauthorized — Token ausente ou inválido</td></tr>
-              <tr><td><span class="badge bg-danger">403</span></td><td>Forbidden — Sem permissão</td></tr>
-              <tr><td><span class="badge bg-secondary">404</span></td><td>Not Found — Recurso não encontrado</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </section>
+    <!-- USERS -->
+    <h4 id="users" class="fw-bold mt-4 mb-3" style="color:var(--salon-primary)">
+      <i class="bi bi-person-lines-fill me-2"></i>Usuários
+    </h4>
+    {% include 'api_endpoint.html' with method="GET" path="/api/users/me/"           description="Ver perfil próprio"             auth=True %}
+    {% include 'api_endpoint.html' with method="PUT" path="/api/users/me/profile/"   description="Atualizar perfil"               auth=True %}
+    {% include 'api_endpoint.html' with method="GET" path="/api/users/"              description="Listar usuários (admin)"        auth=True admin=True %}
+    {% include 'api_endpoint.html' with method="GET" path="/api/logs/"               description="Logs de ações (admin)"         auth=True admin=True %}
 
-      <!-- Section: Auth -->
-      <section id="section-auth-endpoints" class="mb-5">
-        <h3 class="fw-bold border-bottom pb-2 mb-3">Autenticação</h3>
-
-        {% include "api_endpoint.html" with method="POST" path="/api/auth/register/" auth="Público" description="Cadastra novo usuário e retorna o token de acesso." request_body='{"username": "joao", "email": "joao@email.com", "first_name": "João", "last_name": "Silva", "password": "minhasenha123", "password_confirm": "minhasenha123"}' response_body='{"username": "joao", "email": "joao@email.com", "first_name": "João", "last_name": "Silva", "token": "abc123..."}' %}
-
-        {% include "api_endpoint.html" with method="POST" path="/api/auth/login/" auth="Público" description="Autentica o usuário e retorna o token de acesso." request_body='{"username": "joao", "password": "minhasenha123"}' response_body='{"token": "abc123...", "user": {"id": 1, "username": "joao", "email": "joao@email.com", "is_staff": false}}' %}
-
-        {% include "api_endpoint.html" with method="POST" path="/api/auth/logout/" auth="Token" description="Invalida o token atual do usuário." request_body="" response_body='{"message": "Logout realizado com sucesso."}' %}
-
-        {% include "api_endpoint.html" with method="GET" path="/api/auth/token/" auth="Token" description="Retorna o token atual do usuário autenticado." request_body="" response_body='{"token": "abc123...", "username": "joao"}' %}
-
-        {% include "api_endpoint.html" with method="POST" path="/api/auth/token/regenerate/" auth="Token" description="Invalida o token atual e gera um novo. Use quando suspeitar de comprometimento." request_body="" response_body='{"token": "xyz789...", "message": "Token regenerado com sucesso."}' %}
-      </section>
-
-      <!-- Section: Users -->
-      <section id="section-users" class="mb-5">
-        <h3 class="fw-bold border-bottom pb-2 mb-3">Usuários</h3>
-
-        {% include "api_endpoint.html" with method="GET" path="/api/users/me/" auth="Token" description="Retorna os dados do usuário autenticado, incluindo perfil." request_body="" response_body='{"id": 1, "username": "joao", "email": "joao@email.com", "first_name": "João", "last_name": "Silva", "is_staff": false, "date_joined": "2024-01-01T00:00:00Z", "profile": {"phone": "", "cidade": "São Paulo", "estado": "SP"}}' %}
-
-        {% include "api_endpoint.html" with method="PUT" path="/api/users/me/profile/" auth="Token" description="Atualiza o perfil do usuário autenticado." request_body='{"phone": "11999999999", "cep": "01310-100", "bio": "Amante de livros"}' response_body='{"phone": "11999999999", "cep": "01310-100", "logradouro": "Av. Paulista", "bairro": "Bela Vista", "cidade": "São Paulo", "estado": "SP"}' %}
-
-        {% include "api_endpoint.html" with method="GET" path="/api/users/" auth="Token (Admin)" description="Lista todos os usuários. Apenas administradores." request_body="" response_body='{"count": 10, "results": [{"id": 1, "username": "admin", "is_staff": true}, ...]}' %}
-
-        {% include "api_endpoint.html" with method="GET" path="/api/users/{id}/" auth="Token (Admin)" description="Detalhes de um usuário específico. Apenas administradores." request_body="" response_body='{"id": 2, "username": "joao", "email": "joao@email.com", "profile": {...}}' %}
-
-        {% include "api_endpoint.html" with method="DELETE" path="/api/users/{id}/" auth="Token (Admin)" description="Remove um usuário. Apenas administradores." request_body="" response_body="" %}
-      </section>
-
-      <!-- Section: Books -->
-      <section id="section-books" class="mb-5">
-        <h3 class="fw-bold border-bottom pb-2 mb-3">Livros</h3>
-
-        <div class="alert alert-light border mb-3">
-          <strong>Filtros disponíveis em GET /api/books/:</strong>
-          <code>?q=título</code> &nbsp; <code>?category=1</code> &nbsp; <code>?available=1</code>
-        </div>
-
-        {% include "api_endpoint.html" with method="GET" path="/api/books/" auth="Token" description="Lista todos os livros do acervo com filtros opcionais." request_body="" response_body='{"count": 5, "results": [{"id": 1, "title": "Dom Casmurro", "author": "Machado de Assis", "available_copies": 3, "is_available": true, "average_rating": 4.5, "categories": [{"id": 1, "name": "Romance"}]}]}' %}
-
-        {% include "api_endpoint.html" with method="GET" path="/api/books/{id}/" auth="Token" description="Detalhes completos de um livro, incluindo comentários e avaliações." request_body="" response_body='{"id": 1, "title": "Dom Casmurro", "author": "Machado de Assis", "isbn": "...", "description": "...", "available_copies": 3, "total_copies": 3, "average_rating": 4.5, "comments": [...]}' %}
-
-        {% include "api_endpoint.html" with method="POST" path="/api/books/" auth="Token (Admin)" description="Cria um novo livro. Apenas administradores." request_body='{"title": "Novo Livro", "author": "Autor", "isbn": "978-...", "description": "Descrição", "total_copies": 3, "category_ids": [1, 2]}' response_body='{"id": 10, "title": "Novo Livro", "author": "Autor", "available_copies": 3}' %}
-
-        {% include "api_endpoint.html" with method="PATCH" path="/api/books/{id}/" auth="Token (Admin)" description="Atualiza parcialmente um livro. Apenas administradores." request_body='{"available_copies": 5}' response_body='{"id": 1, "title": "Dom Casmurro", "available_copies": 5}' %}
-
-        {% include "api_endpoint.html" with method="DELETE" path="/api/books/{id}/" auth="Token (Admin)" description="Remove um livro do acervo. Apenas administradores." request_body="" response_body="" %}
-
-        {% include "api_endpoint.html" with method="POST" path="/api/books/{id}/reserve/" auth="Token" description="Cria uma reserva para o livro. Retorna erro se não houver exemplares disponíveis." request_body="" response_body='{"id": 5, "book": 1, "book_title": "Dom Casmurro", "status": "PENDING", "reserved_at": "2024-01-15T10:00:00Z"}' %}
-
-        {% include "api_endpoint.html" with method="POST" path="/api/books/{id}/comment/" auth="Token" description="Adiciona um comentário ao livro." request_body='{"content": "Livro excelente, recomendo a todos!"}' response_body='{"id": 3, "user_username": "joao", "content": "Livro excelente, recomendo a todos!", "created_at": "2024-01-15T10:00:00Z"}' %}
-
-        {% include "api_endpoint.html" with method="POST" path="/api/books/{id}/rate/" auth="Token" description="Avalia o livro com uma nota de 1 a 5. Atualiza avaliação existente." request_body='{"score": 5}' response_body='{"id": 2, "user_username": "joao", "book": 1, "score": 5}' %}
-      </section>
-
-      <!-- Section: Config -->
-      <section id="section-config" class="mb-5">
-        <h3 class="fw-bold border-bottom pb-2 mb-3">Configuração da Biblioteca</h3>
-        <div class="alert alert-light border mb-3">
-          Define as regras de negócio para todos os empréstimos: prazo e multa por atraso. Estas configurações são capturadas como <em>snapshot</em> no momento da solicitação.
-        </div>
-
-        {% include "api_endpoint.html" with method="GET" path="/api/config/" auth="Token" description="Retorna a configuração atual de empréstimo da biblioteca." request_body="" response_body='{"fine_per_day": "1.00", "max_loan_days": 14}' %}
-
-        {% include "api_endpoint.html" with method="PUT" path="/api/config/" auth="Token (Admin)" description="Atualiza prazo máximo de empréstimo e multa por dia de atraso. Apenas administradores." request_body='{"fine_per_day": "2.50", "max_loan_days": 7}' response_body='{"fine_per_day": "2.50", "max_loan_days": 7}' %}
-
-        {% include "api_endpoint.html" with method="PATCH" path="/api/config/" auth="Token (Admin)" description="Atualiza parcialmente a configuração da biblioteca." request_body='{"max_loan_days": 21}' response_body='{"fine_per_day": "1.00", "max_loan_days": 21}' %}
-      </section>
-
-      <!-- Section: Reservations / Loans -->
-      <section id="section-reservations" class="mb-5">
-        <h3 class="fw-bold border-bottom pb-2 mb-3">Empréstimos</h3>
-
-        <div class="alert alert-light border mb-3">
-          <strong>Fluxo de vida de um empréstimo:</strong><br>
-          <code>PENDING</code> (solicitado) → <code>ACTIVE</code> (confirmado pelo admin) → <code>OVERDUE</code> (automático, com atraso) → <code>RETURNED</code> (devolvido)<br>
-          <small class="text-muted">Filtros: <code>?status=ACTIVE</code> &nbsp; <code>?overdue=1</code> (apenas atrasados)</small>
-        </div>
-
-        {% include "api_endpoint.html" with method="GET" path="/api/reservations/" auth="Token" description="Lista empréstimos. Usuários veem os próprios; admins veem todos. Retorna campos financeiros completos." request_body="" response_body='{"count": 2, "results": [{"id": 1, "book_title": "Dom Casmurro", "status": "ACTIVE", "status_display": "Em Empréstimo", "loan_date": "2024-01-15", "due_date": "2024-01-29", "rental_price_snapshot": "5.00", "fine_per_day_snapshot": "1.00", "fine_amount": "0.00", "fine_paid": false, "is_overdue": false, "overdue_days": 0, "calculated_fine": "0.00", "total_amount": "5.00"}]}' %}
-
-        {% include "api_endpoint.html" with method="POST" path="/api/books/{id}/reserve/" auth="Token" description="Cria um empréstimo (status PENDING). Captura rental_price e fine_per_day no momento da solicitação. Erro se sem exemplares disponíveis." request_body="" response_body='{"id": 5, "book": 1, "book_title": "Dom Casmurro", "status": "PENDING", "rental_price_snapshot": "5.00", "fine_per_day_snapshot": "1.00", "total_amount": "5.00"}' %}
-
-        {% include "api_endpoint.html" with method="POST" path="/api/reservations/{id}/confirm/" auth="Token (Admin)" description="Aprova a solicitação e confirma a retirada do livro. Define loan_date (hoje) e due_date (hoje + prazo). Muda status para ACTIVE." request_body="" response_body='{"message": "Empréstimo confirmado.", "loan": {"status": "ACTIVE", "loan_date": "2024-01-15", "due_date": "2024-01-29"}}' %}
-
-        {% include "api_endpoint.html" with method="POST" path="/api/reservations/{id}/reject/" auth="Token (Admin)" description="Rejeita uma solicitação pendente. O exemplar é devolvido automaticamente ao estoque (available_copies+1). Status passa para CANCELLED." request_body='{"reason": "Usuário possui pendência não quitada."}' response_body='{"message": "Solicitação rejeitada. Exemplar devolvido ao estoque."}' %}
-
-        {% include "api_endpoint.html" with method="POST" path="/api/reservations/{id}/return/" auth="Token (Admin)" description="Registra a devolução. Calcula multa proporcional aos dias de atraso. Libera exemplar no acervo." request_body="" response_body='{"message": "Devolução registrada com sucesso.", "fine_amount": "3.00", "overdue_days": 3, "total_amount": "8.00", "loan": {"status": "RETURNED"}}' %}
-
-        {% include "api_endpoint.html" with method="POST" path="/api/reservations/{id}/fine-paid/" auth="Token (Admin)" description="Marca a multa de um empréstimo devolvido como paga. Apenas para empréstimos com multa > 0." request_body="" response_body='{"message": "Multa de R$ 3.00 marcada como paga."}' %}
-
-        {% include "api_endpoint.html" with method="POST" path="/api/reservations/{id}/cancel/" auth="Token" description="Cancela uma solicitação pendente. Apenas o próprio usuário pode cancelar e somente status PENDING." request_body="" response_body='{"message": "Solicitação cancelada."}' %}
-      </section>
-
-      <!-- Section: Financial -->
-      <section id="section-financial" class="mb-5">
-        <h3 class="fw-bold border-bottom pb-2 mb-3">Resumo Financeiro</h3>
-        <div class="alert alert-light border mb-3">
-          Visão consolidada de receitas de empréstimos, multas cobradas/pagas e status da carteira. Apenas administradores.
-        </div>
-
-        {% include "api_endpoint.html" with method="GET" path="/api/financial/" auth="Token (Admin)" description="Retorna resumo financeiro consolidado: receita de empréstimos, total de multas cobradas, pagas e pendentes, e contadores de empréstimos por status." request_body="" response_body='{"receita_emprestimos": "125.00", "total_multas_cobradas": "45.00", "total_multas_pagas": "30.00", "total_multas_pendentes": "15.00", "emprestimos_em_atraso": 3, "emprestimos_ativos": 8, "emprestimos_pendentes": 2, "total_emprestimos": 50, "total_devolvidos": 40}' %}
-      </section>
-
-      <!-- Section: Categories -->
-      <section id="section-categories" class="mb-5">
-        <h3 class="fw-bold border-bottom pb-2 mb-3">Categorias</h3>
-
-        {% include "api_endpoint.html" with method="GET" path="/api/categories/" auth="Token" description="Lista todas as categorias do acervo." request_body="" response_body='[{"id": 1, "name": "Romance", "description": ""}, {"id": 2, "name": "Ficção Científica", "description": ""}]' %}
-
-        {% include "api_endpoint.html" with method="POST" path="/api/categories/" auth="Token (Admin)" description="Cria uma nova categoria. Apenas administradores." request_body='{"name": "Quadrinhos", "description": "Histórias em quadrinhos e graphic novels"}' response_body='{"id": 11, "name": "Quadrinhos", "description": "Histórias em quadrinhos e graphic novels"}' %}
-      </section>
-
-      <!-- Section: Analytics -->
-      <section id="section-analytics" class="mb-5">
-        <h3 class="fw-bold border-bottom pb-2 mb-3">Analytics</h3>
-
-        {% include "api_endpoint.html" with method="GET" path="/api/analytics/summary/" auth="Token (Admin)" description="Resumo geral: total de livros, usuários, reservas, comentários e avaliações." request_body="" response_body='{"total_books": 10, "available_books": 7, "total_users": 25, "total_reservations": 42, "active_reservations": 8, "total_comments": 30, "total_ratings": 20}' %}
-
-        {% include "api_endpoint.html" with method="GET" path="/api/analytics/books/" auth="Token" description="Estatísticas detalhadas de cada livro: reservas, avaliações e comentários." request_body="" response_body='[{"id": 1, "title": "Dom Casmurro", "total_reservations": 12, "average_rating": 4.5, "total_comments": 5}]' %}
-
-        {% include "api_endpoint.html" with method="GET" path="/api/analytics/reservations/" auth="Token" description="Histórico de reservas com datas. Admins veem todas, usuários veem as próprias." request_body="" response_body='[{"id": 1, "book_title": "Clean Code", "status": "RETURNED", "reserved_at": "2024-01-01T00:00:00Z"}]' %}
-
-        {% include "api_endpoint.html" with method="GET" path="/api/analytics/ratings/" auth="Token" description="Avaliações feitas. Admins veem todas, usuários veem as próprias." request_body="" response_body='[{"id": 1, "book_title": "Dom Casmurro", "score": 5}]' %}
-
-        {% include "api_endpoint.html" with method="GET" path="/api/analytics/users/" auth="Token (Admin)" description="Atividade por usuário: reservas, comentários e avaliações feitas." request_body="" response_body='[{"id": 2, "username": "joao", "total_reservations": 3, "total_comments": 2, "total_ratings": 5}]' %}
-
-        {% include "api_endpoint.html" with method="GET" path="/api/analytics/categories/" auth="Token" description="Quantidade de livros por categoria." request_body="" response_body='[{"id": 1, "name": "Romance", "book_count": 3}]' %}
-      </section>
-
-      <!-- Section: Logs -->
-      <section id="section-logs" class="mb-5">
-        <h3 class="fw-bold border-bottom pb-2 mb-3">Logs de Ações</h3>
-
-        <div class="alert alert-light border mb-3">
-          <strong>Filtros:</strong> <code>?user=1</code> &nbsp; <code>?action=LOGIN</code>
-        </div>
-
-        {% include "api_endpoint.html" with method="GET" path="/api/logs/" auth="Token (Admin)" description="Lista todos os logs de ações dos usuários. Apenas administradores." request_body="" response_body='{"count": 150, "results": [{"id": 1, "user_username": "joao", "action": "LOGIN", "action_display": "Login", "ip_address": "192.168.1.1", "timestamp": "2024-01-15T10:00:00Z"}]}' %}
-      </section>
-
-      <!-- Section: Tester -->
-      <section id="section-tester" class="mb-5">
-        <h3 class="fw-bold border-bottom pb-2 mb-3">🧪 Testador Interativo</h3>
-        <p class="text-muted">Faça chamadas reais à API diretamente desta página.</p>
-
-        <div class="card shadow-sm border-0">
-          <div class="card-body">
-            <div class="row g-3">
-              <div class="col-md-2">
-                <label class="form-label fw-semibold small">Método</label>
-                <select class="form-select form-select-sm" id="tester-method">
-                  <option>GET</option>
-                  <option>POST</option>
-                  <option>PUT</option>
-                  <option>PATCH</option>
-                  <option>DELETE</option>
-                </select>
-              </div>
-              <div class="col-md-6">
-                <label class="form-label fw-semibold small">URL</label>
-                <input type="text" class="form-control form-control-sm font-monospace" id="tester-url" placeholder="/api/books/" value="/api/books/">
-              </div>
-              <div class="col-md-4">
-                <label class="form-label fw-semibold small">Token</label>
-                <input type="text" class="form-control form-control-sm font-monospace" id="tester-token" placeholder="cole seu token aqui" value="{{ token }}">
-              </div>
-              <div class="col-12">
-                <label class="form-label fw-semibold small">Corpo (JSON)</label>
-                <textarea class="form-control form-control-sm font-monospace" id="tester-body" rows="4" placeholder='{"key": "value"}'></textarea>
-              </div>
-              <div class="col-12">
-                <button class="btn btn-primary" onclick="runRequest()">
-                  <span id="tester-spinner" class="spinner-border spinner-border-sm d-none me-1"></span>
-                  Enviar Requisição
-                </button>
-              </div>
-              <div class="col-12" id="tester-result-container" style="display:none;">
-                <label class="form-label fw-semibold small">Resposta</label>
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                  <span id="tester-status-badge"></span>
-                  <button class="btn btn-outline-secondary btn-sm" onclick="copyResult()">Copiar</button>
-                </div>
-                <pre class="code-block" id="tester-result" style="max-height:400px; overflow-y:auto; white-space: pre-wrap;"></pre>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-    </div><!-- end col -->
-  </div><!-- end row -->
+  </div>
 </div>
-
-<!-- Partial template rendered inline -->
-{% block extra_js %}
-<script>
-const BASE_URL = window.location.origin;
-
-function copyToken() {
-  const token = document.getElementById('user-token').textContent;
-  navigator.clipboard.writeText(token).then(() => {
-    const btn = event.target;
-    btn.textContent = 'Copiado!';
-    setTimeout(() => btn.textContent = 'Copiar', 2000);
-  });
-}
-
-function regenerateToken() {
-  if (!confirm('Isso vai invalidar seu token atual. Continuar?')) return;
-  const token = document.getElementById('user-token').textContent;
-  fetch('/api/auth/token/regenerate/', {
-    method: 'POST',
-    headers: {
-      'Authorization': 'Token ' + token,
-      'X-CSRFToken': getCookie('csrftoken'),
-    }
-  })
-  .then(r => r.json())
-  .then(data => {
-    if (data.token) {
-      document.getElementById('user-token').textContent = data.token;
-      document.getElementById('tester-token').value = data.token;
-      alert('Token regenerado com sucesso!');
-    } else {
-      alert('Erro ao regenerar token: ' + JSON.stringify(data));
-    }
-  })
-  .catch(e => alert('Erro: ' + e));
-}
-
-function runRequest() {
-  const method = document.getElementById('tester-method').value;
-  const url = document.getElementById('tester-url').value;
-  const token = document.getElementById('tester-token').value.trim();
-  const body = document.getElementById('tester-body').value.trim();
-  const spinner = document.getElementById('tester-spinner');
-  const resultContainer = document.getElementById('tester-result-container');
-  const resultEl = document.getElementById('tester-result');
-  const statusBadge = document.getElementById('tester-status-badge');
-
-  spinner.classList.remove('d-none');
-
-  const headers = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = 'Token ' + token;
-
-  const opts = { method, headers };
-  if (['POST','PUT','PATCH'].includes(method) && body) {
-    try { opts.body = JSON.stringify(JSON.parse(body)); }
-    catch { opts.body = body; }
-  }
-
-  const fullUrl = url.startsWith('http') ? url : BASE_URL + url;
-
-  fetch(fullUrl, opts)
-    .then(async r => {
-      spinner.classList.add('d-none');
-      resultContainer.style.display = 'block';
-      const color = r.ok ? 'success' : (r.status < 500 ? 'warning' : 'danger');
-      statusBadge.innerHTML = `<span class="badge bg-${color} fs-6">${r.status} ${r.statusText}</span>`;
-      const text = await r.text();
-      try { resultEl.textContent = JSON.stringify(JSON.parse(text), null, 2); }
-      catch { resultEl.textContent = text; }
-    })
-    .catch(e => {
-      spinner.classList.add('d-none');
-      resultContainer.style.display = 'block';
-      statusBadge.innerHTML = '<span class="badge bg-danger">Erro de rede</span>';
-      resultEl.textContent = e.toString();
-    });
-}
-
-function copyResult() {
-  navigator.clipboard.writeText(document.getElementById('tester-result').textContent);
-}
-
-function getCookie(name) {
-  let cookieValue = null;
-  if (document.cookie && document.cookie !== '') {
-    for (const cookie of document.cookie.split(';')) {
-      const c = cookie.trim();
-      if (c.startsWith(name + '=')) {
-        cookieValue = decodeURIComponent(c.substring(name.length + 1));
-        break;
-      }
-    }
-  }
-  return cookieValue;
-}
-
-// Smooth scroll for sidebar links
-document.querySelectorAll('a[href^="#"]').forEach(a => {
-  a.addEventListener('click', e => {
-    e.preventDefault();
-    document.querySelector(a.getAttribute('href'))?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
-});
-</script>
-{% endblock %}
 {% endblock %}

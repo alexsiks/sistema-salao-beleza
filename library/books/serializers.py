@@ -1,110 +1,92 @@
 from rest_framework import serializers
-from .models import Book, Category, Reservation, Comment, Rating, LibraryConfig
+from .models import Service, ServiceCategory, Professional, Appointment, SalonConfig
 
 
-class LibraryConfigSerializer(serializers.ModelSerializer):
+class SalonConfigSerializer(serializers.ModelSerializer):
     class Meta:
-        model = LibraryConfig
-        fields = ['fine_per_day', 'max_loan_days']
+        model = SalonConfig
+        fields = ['salon_name', 'phone', 'address', 'open_time', 'close_time',
+                  'slot_minutes', 'max_advance_days', 'cancellation_hours']
 
 
-class CategorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Category
-        fields = ['id', 'name', 'description']
-
-
-class RatingSerializer(serializers.ModelSerializer):
-    user_username = serializers.CharField(source='user.username', read_only=True)
+class ServiceCategorySerializer(serializers.ModelSerializer):
+    service_count = serializers.SerializerMethodField()
 
     class Meta:
-        model = Rating
-        fields = ['id', 'user', 'user_username', 'book', 'score', 'created_at']
-        read_only_fields = ['id', 'user', 'user_username', 'created_at']
+        model = ServiceCategory
+        fields = ['id', 'name', 'icon', 'description', 'service_count']
+
+    def get_service_count(self, obj):
+        return obj.services.filter(is_active=True).count()
 
 
-class CommentSerializer(serializers.ModelSerializer):
-    user_username = serializers.CharField(source='user.username', read_only=True)
-    user_full_name = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Comment
-        fields = ['id', 'user', 'user_username', 'user_full_name', 'book',
-                  'content', 'created_at', 'updated_at', 'is_visible']
-        read_only_fields = ['id', 'user', 'user_username', 'user_full_name',
-                            'created_at', 'updated_at', 'is_visible']
-
-    def get_user_full_name(self, obj):
-        return obj.user.get_full_name() or obj.user.username
-
-
-class BookListSerializer(serializers.ModelSerializer):
-    average_rating = serializers.FloatField(read_only=True)
-    rating_count = serializers.IntegerField(read_only=True)
-    categories = CategorySerializer(many=True, read_only=True)
-    is_available = serializers.BooleanField(read_only=True)
+class ServiceSerializer(serializers.ModelSerializer):
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    duration_display = serializers.CharField(read_only=True)
+    professionals_count = serializers.SerializerMethodField()
 
     class Meta:
-        model = Book
-        fields = ['id', 'title', 'author', 'publisher', 'year', 'cover_image',
-                  'categories', 'available_copies', 'total_copies', 'is_available',
-                  'rental_price', 'average_rating', 'rating_count', 'created_at']
+        model = Service
+        fields = ['id', 'name', 'description', 'duration_minutes', 'duration_display',
+                  'price', 'category', 'category_name', 'image', 'is_active',
+                  'professionals_count', 'created_at']
+        read_only_fields = ['id', 'duration_display', 'professionals_count', 'created_at']
+
+    def get_professionals_count(self, obj):
+        return obj.professionals.filter(is_active=True).count()
 
 
-class BookDetailSerializer(serializers.ModelSerializer):
-    average_rating = serializers.FloatField(read_only=True)
-    rating_count = serializers.IntegerField(read_only=True)
-    categories = CategorySerializer(many=True, read_only=True)
-    category_ids = serializers.PrimaryKeyRelatedField(
-        queryset=Category.objects.all(), many=True, write_only=True,
-        source='categories', required=False
-    )
-    comments = CommentSerializer(many=True, read_only=True)
-    is_available = serializers.BooleanField(read_only=True)
-    created_by_username = serializers.CharField(source='created_by.username', read_only=True)
+class ProfessionalSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(read_only=True)
+    username = serializers.CharField(source='user.username', read_only=True)
+    services = ServiceSerializer(many=True, read_only=True)
 
     class Meta:
-        model = Book
-        fields = ['id', 'title', 'author', 'isbn', 'publisher', 'year', 'description',
-                  'cover_image', 'categories', 'category_ids', 'total_copies',
-                  'available_copies', 'is_available', 'rental_price',
-                  'average_rating', 'rating_count',
-                  'comments', 'created_by_username', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'available_copies', 'is_available', 'average_rating',
-                            'rating_count', 'created_by_username', 'created_at', 'updated_at']
+        model = Professional
+        fields = ['id', 'full_name', 'username', 'bio', 'photo',
+                  'services', 'is_active', 'upcoming_appointments']
+        read_only_fields = ['id', 'full_name', 'username', 'upcoming_appointments']
 
 
-class ReservationSerializer(serializers.ModelSerializer):
-    user_username = serializers.CharField(source='user.username', read_only=True)
-    user_full_name = serializers.SerializerMethodField()
-    book_title = serializers.CharField(source='book.title', read_only=True)
-    book_author = serializers.CharField(source='book.author', read_only=True)
+class AppointmentSerializer(serializers.ModelSerializer):
+    client_name = serializers.SerializerMethodField()
+    client_username = serializers.CharField(source='client.username', read_only=True)
+    professional_name = serializers.SerializerMethodField()
+    service_name = serializers.CharField(source='service.name', read_only=True)
+    service_duration = serializers.IntegerField(source='service.duration_minutes', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
-    is_overdue = serializers.BooleanField(read_only=True)
-    overdue_days = serializers.IntegerField(read_only=True)
-    calculated_fine = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
-    total_amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    is_upcoming = serializers.BooleanField(read_only=True)
+    can_cancel = serializers.SerializerMethodField()
 
     class Meta:
-        model = Reservation
+        model = Appointment
         fields = [
-            'id', 'user', 'user_username', 'user_full_name',
-            'book', 'book_title', 'book_author',
+            'id', 'client', 'client_name', 'client_username',
+            'professional', 'professional_name',
+            'service', 'service_name', 'service_duration',
+            'date', 'start_time', 'end_time',
             'status', 'status_display',
-            'reserved_at', 'loan_date', 'due_date', 'returned_at',
-            'rental_price_snapshot', 'fine_per_day_snapshot',
-            'fine_amount', 'fine_paid', 'total_amount',
-            'is_overdue', 'overdue_days', 'calculated_fine',
-            'notes',
+            'notes', 'internal_notes',
+            'price_snapshot', 'duration_snapshot',
+            'cancel_reason',
+            'is_upcoming', 'can_cancel',
+            'created_at',
         ]
         read_only_fields = [
-            'id', 'user', 'user_username', 'user_full_name',
-            'book_title', 'book_author', 'status', 'status_display',
-            'reserved_at', 'loan_date', 'due_date', 'returned_at',
-            'rental_price_snapshot', 'fine_per_day_snapshot',
-            'fine_amount', 'total_amount',
-            'is_overdue', 'overdue_days', 'calculated_fine',
+            'id', 'client', 'client_name', 'client_username',
+            'professional_name', 'service_name', 'service_duration',
+            'status', 'status_display', 'end_time',
+            'price_snapshot', 'duration_snapshot',
+            'is_upcoming', 'can_cancel', 'created_at',
         ]
 
-    def get_user_full_name(self, obj):
-        return obj.user.get_full_name() or obj.user.username
+    def get_client_name(self, obj):
+        return obj.client.get_full_name() or obj.client.username
+
+    def get_professional_name(self, obj):
+        if obj.professional:
+            return obj.professional.full_name
+        return 'Sem profissional definido'
+
+    def get_can_cancel(self, obj):
+        return obj.can_cancel()

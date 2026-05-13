@@ -1,26 +1,28 @@
 from decimal import Decimal
-from datetime import date, timedelta
+from datetime import date, time, timedelta, datetime
 from django.db import models
 from django.contrib.auth.models import User
-from django.core.validators import MinValueValidator, MaxValueValidator
-from django.db.models import Avg
+from django.core.validators import MinValueValidator
 
 
-class LibraryConfig(models.Model):
-    fine_per_day = models.DecimalField(
-        'Multa por Dia de Atraso (R$)', max_digits=6, decimal_places=2,
-        default=Decimal('1.00'), validators=[MinValueValidator(Decimal('0.00'))]
-    )
-    max_loan_days = models.PositiveIntegerField(
-        'Prazo Máximo de Empréstimo (dias)', default=14
+class SalonConfig(models.Model):
+    salon_name = models.CharField('Nome do Salão', max_length=200, default='Espaço Beleza')
+    phone = models.CharField('Telefone/WhatsApp', max_length=20, blank=True)
+    address = models.TextField('Endereço', blank=True)
+    open_time = models.TimeField('Abertura', default=time(9, 0))
+    close_time = models.TimeField('Fechamento', default=time(18, 0))
+    slot_minutes = models.PositiveIntegerField('Intervalo entre horários (min)', default=30)
+    max_advance_days = models.PositiveIntegerField('Máximo de dias para agendar', default=30)
+    cancellation_hours = models.PositiveIntegerField(
+        'Antecedência mínima para cancelar (horas)', default=2
     )
 
     class Meta:
-        verbose_name = 'Configuração da Biblioteca'
-        verbose_name_plural = 'Configuração da Biblioteca'
+        verbose_name = 'Configuração do Salão'
+        verbose_name_plural = 'Configuração do Salão'
 
     def __str__(self):
-        return f'Prazo: {self.max_loan_days} dias | Multa: R$ {self.fine_per_day}/dia'
+        return self.salon_name
 
     @classmethod
     def get(cls):
@@ -31,184 +33,180 @@ class LibraryConfig(models.Model):
         self.pk = 1
         super().save(*args, **kwargs)
 
+    def available_slots(self, for_date, professional, service_duration):
+        """Retorna lista de horários disponíveis para a data e profissional."""
+        slots = []
+        current = datetime.combine(for_date, self.open_time)
+        end_limit = datetime.combine(for_date, self.close_time)
+        step = timedelta(minutes=self.slot_minutes)
+        duration = timedelta(minutes=service_duration)
 
-class Category(models.Model):
-    name = models.CharField('Nome', max_length=100, unique=True)
+        booked = set()
+        appts = Appointment.objects.filter(
+            professional=professional,
+            date=for_date,
+            status__in=['PENDING', 'CONFIRMED']
+        )
+        for a in appts:
+            s = datetime.combine(for_date, a.start_time)
+            e = datetime.combine(for_date, a.end_time)
+            t = s
+            while t < e:
+                booked.add(t.time())
+                t += step
+
+        now = datetime.now()
+
+        while current + duration <= end_limit:
+            slot_end = current + duration
+            slot_times = set()
+            t = current
+            while t < slot_end:
+                slot_times.add(t.time())
+                t += step
+
+            if not slot_times & booked and current > now:
+                slots.append(current.time())
+            current += step
+
+        return slots
+
+
+class ServiceCategory(models.Model):
+    name = models.CharField('Categoria', max_length=100, unique=True)
+    icon = models.CharField('Ícone Bootstrap', max_length=50, default='bi-scissors')
     description = models.TextField('Descrição', blank=True)
 
     class Meta:
-        verbose_name = 'Categoria'
-        verbose_name_plural = 'Categorias'
+        verbose_name = 'Categoria de Serviço'
+        verbose_name_plural = 'Categorias de Serviços'
         ordering = ['name']
 
     def __str__(self):
         return self.name
 
 
-class Book(models.Model):
-    title = models.CharField('Título', max_length=300)
-    author = models.CharField('Autor', max_length=200)
-    isbn = models.CharField('ISBN', max_length=13, blank=True)
-    publisher = models.CharField('Editora', max_length=200, blank=True)
-    year = models.PositiveIntegerField('Ano de Publicação', null=True, blank=True)
+class Service(models.Model):
+    name = models.CharField('Nome do Serviço', max_length=200)
     description = models.TextField('Descrição')
-    cover_image = models.ImageField('Capa', upload_to='livros/', blank=True, null=True)
-    categories = models.ManyToManyField(Category, blank=True, verbose_name='Categorias')
-    total_copies = models.PositiveIntegerField('Total de Exemplares', default=1)
-    available_copies = models.PositiveIntegerField('Exemplares Disponíveis', default=1)
-    rental_price = models.DecimalField(
-        'Valor do Empréstimo (R$)', max_digits=8, decimal_places=2,
+    duration_minutes = models.PositiveIntegerField(
+        'Duração (minutos)', default=60,
+        validators=[MinValueValidator(1)]
+    )
+    price = models.DecimalField(
+        'Preço (R$)', max_digits=8, decimal_places=2,
         default=Decimal('0.00'), validators=[MinValueValidator(Decimal('0.00'))]
     )
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True,
-                                   related_name='created_books', verbose_name='Cadastrado por')
-    created_at = models.DateTimeField('Cadastrado em', auto_now_add=True)
-    updated_at = models.DateTimeField('Atualizado em', auto_now=True)
+    category = models.ForeignKey(
+        ServiceCategory, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='services', verbose_name='Categoria'
+    )
+    image = models.ImageField('Foto', upload_to='servicos/', blank=True, null=True)
+    is_active = models.BooleanField('Ativo', default=True)
+    created_at = models.DateTimeField('Criado em', auto_now_add=True)
 
     class Meta:
-        verbose_name = 'Livro'
-        verbose_name_plural = 'Livros'
-        ordering = ['title']
+        verbose_name = 'Serviço'
+        verbose_name_plural = 'Serviços'
+        ordering = ['name']
 
     def __str__(self):
-        return f'{self.title} — {self.author}'
+        return f'{self.name} — {self.duration_minutes}min — R$ {self.price}'
 
     @property
-    def average_rating(self):
-        avg = self.ratings.aggregate(avg=Avg('score'))['avg']
-        return round(avg, 1) if avg else None
+    def duration_display(self):
+        h = self.duration_minutes // 60
+        m = self.duration_minutes % 60
+        if h and m:
+            return f'{h}h{m:02d}min'
+        elif h:
+            return f'{h}h'
+        return f'{m}min'
+
+
+class Professional(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE,
+                                related_name='professional', verbose_name='Usuário')
+    bio = models.TextField('Sobre', blank=True)
+    photo = models.ImageField('Foto', upload_to='profissionais/', blank=True, null=True)
+    services = models.ManyToManyField(Service, blank=True,
+                                      related_name='professionals', verbose_name='Serviços')
+    is_active = models.BooleanField('Ativo', default=True)
+
+    class Meta:
+        verbose_name = 'Profissional'
+        verbose_name_plural = 'Profissionais'
+
+    def __str__(self):
+        return self.user.get_full_name() or self.user.username
 
     @property
-    def is_available(self):
-        return self.available_copies > 0
+    def full_name(self):
+        return self.user.get_full_name() or self.user.username
 
     @property
-    def rating_count(self):
-        return self.ratings.count()
+    def upcoming_appointments(self):
+        return self.appointments.filter(
+            date__gte=date.today(),
+            status__in=['PENDING', 'CONFIRMED']
+        ).count()
 
 
-class Reservation(models.Model):
+class Appointment(models.Model):
     STATUS_CHOICES = [
         ('PENDING',   'Pendente'),
-        ('ACTIVE',    'Em Empréstimo'),
-        ('OVERDUE',   'Em Atraso'),
-        ('RETURNED',  'Devolvido'),
+        ('CONFIRMED', 'Confirmado'),
         ('CANCELLED', 'Cancelado'),
-        ('EXPIRED',   'Expirado'),
+        ('COMPLETED', 'Concluído'),
+        ('NO_SHOW',   'Não Compareceu'),
     ]
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE,
-                             related_name='reservations', verbose_name='Usuário')
-    book = models.ForeignKey(Book, on_delete=models.CASCADE,
-                             related_name='reservations', verbose_name='Livro')
-    status = models.CharField('Status', max_length=15, choices=STATUS_CHOICES, default='PENDING')
-
-    reserved_at = models.DateTimeField('Reservado em', auto_now_add=True)
-    loan_date = models.DateField('Data do Empréstimo', null=True, blank=True)
-    due_date = models.DateField('Data de Devolução Prevista', null=True, blank=True)
-    returned_at = models.DateTimeField('Devolvido em', null=True, blank=True)
-
-    rental_price_snapshot = models.DecimalField(
-        'Valor do Empréstimo (R$)', max_digits=8, decimal_places=2,
-        default=Decimal('0.00')
+    client = models.ForeignKey(User, on_delete=models.CASCADE,
+                               related_name='appointments', verbose_name='Cliente')
+    professional = models.ForeignKey(Professional, on_delete=models.SET_NULL,
+                                     null=True, blank=True,
+                                     related_name='appointments', verbose_name='Profissional')
+    service = models.ForeignKey(Service, on_delete=models.PROTECT,
+                                related_name='appointments', verbose_name='Serviço')
+    date = models.DateField('Data')
+    start_time = models.TimeField('Horário de Início')
+    end_time = models.TimeField('Horário de Término')
+    status = models.CharField('Status', max_length=15,
+                              choices=STATUS_CHOICES, default='PENDING')
+    notes = models.TextField('Observações do Cliente', blank=True)
+    internal_notes = models.TextField('Observações Internas', blank=True)
+    price_snapshot = models.DecimalField(
+        'Preço (R$)', max_digits=8, decimal_places=2, default=Decimal('0.00')
     )
-    fine_per_day_snapshot = models.DecimalField(
-        'Multa/Dia na época (R$)', max_digits=6, decimal_places=2,
-        default=Decimal('0.00')
-    )
-    fine_amount = models.DecimalField(
-        'Valor da Multa (R$)', max_digits=10, decimal_places=2,
-        default=Decimal('0.00')
-    )
-    fine_paid = models.BooleanField('Multa Paga', default=False)
-    notes = models.TextField('Observações', blank=True)
+    duration_snapshot = models.PositiveIntegerField('Duração (min)', default=60)
+    cancel_reason = models.TextField('Motivo do Cancelamento', blank=True)
+    created_at = models.DateTimeField('Agendado em', auto_now_add=True)
 
     class Meta:
-        verbose_name = 'Empréstimo'
-        verbose_name_plural = 'Empréstimos'
-        ordering = ['-reserved_at']
+        verbose_name = 'Agendamento'
+        verbose_name_plural = 'Agendamentos'
+        ordering = ['date', 'start_time']
 
     def __str__(self):
-        return f'{self.user.username} — {self.book.title} ({self.get_status_display()})'
+        return (f'{self.client.get_full_name() or self.client.username} — '
+                f'{self.service.name} — {self.date:%d/%m/%Y} {self.start_time:%H:%M}')
 
     @property
-    def is_overdue(self):
-        if self.status in ('RETURNED', 'CANCELLED', 'EXPIRED'):
+    def is_upcoming(self):
+        return self.date >= date.today() and self.status in ('PENDING', 'CONFIRMED')
+
+    @property
+    def is_past(self):
+        return self.date < date.today()
+
+    @property
+    def datetime_start(self):
+        return datetime.combine(self.date, self.start_time)
+
+    def can_cancel(self, config=None):
+        if config is None:
+            config = SalonConfig.get()
+        if self.status not in ('PENDING', 'CONFIRMED'):
             return False
-        if self.due_date and date.today() > self.due_date:
-            return True
-        return False
-
-    @property
-    def overdue_days(self):
-        if not self.due_date:
-            return 0
-        if self.returned_at:
-            ref = self.returned_at.date()
-        else:
-            ref = date.today()
-        delta = (ref - self.due_date).days
-        return max(0, delta)
-
-    @property
-    def calculated_fine(self):
-        return Decimal(str(self.overdue_days)) * self.fine_per_day_snapshot
-
-    @property
-    def total_amount(self):
-        return self.rental_price_snapshot + self.fine_amount
-
-    def confirm_loan(self):
-        config = LibraryConfig.get()
-        self.loan_date = date.today()
-        self.due_date = date.today() + timedelta(days=config.max_loan_days)
-        self.status = 'ACTIVE'
-        self.save()
-
-    def process_return(self):
-        from django.utils import timezone
-        self.returned_at = timezone.now()
-        self.fine_amount = self.calculated_fine
-        self.status = 'RETURNED'
-        self.book.available_copies += 1
-        self.book.save()
-        self.save()
-        return self.fine_amount
-
-
-class Comment(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE,
-                             related_name='comments', verbose_name='Usuário')
-    book = models.ForeignKey(Book, on_delete=models.CASCADE,
-                             related_name='comments', verbose_name='Livro')
-    content = models.TextField('Comentário')
-    created_at = models.DateTimeField('Criado em', auto_now_add=True)
-    updated_at = models.DateTimeField('Atualizado em', auto_now=True)
-    is_visible = models.BooleanField('Visível', default=True)
-
-    class Meta:
-        verbose_name = 'Comentário'
-        verbose_name_plural = 'Comentários'
-        ordering = ['-created_at']
-
-    def __str__(self):
-        return f'{self.user.username} em "{self.book.title}"'
-
-
-class Rating(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE,
-                             related_name='ratings', verbose_name='Usuário')
-    book = models.ForeignKey(Book, on_delete=models.CASCADE,
-                             related_name='ratings', verbose_name='Livro')
-    score = models.PositiveSmallIntegerField(
-        'Nota', validators=[MinValueValidator(1), MaxValueValidator(5)]
-    )
-    created_at = models.DateTimeField('Avaliado em', auto_now_add=True)
-
-    class Meta:
-        verbose_name = 'Avaliação'
-        verbose_name_plural = 'Avaliações'
-        unique_together = ('user', 'book')
-
-    def __str__(self):
-        return f'{self.user.username} — {self.book.title}: {self.score}/5'
+        deadline = self.datetime_start - timedelta(hours=config.cancellation_hours)
+        return datetime.now() <= deadline

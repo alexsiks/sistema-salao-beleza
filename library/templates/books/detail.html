@@ -1,193 +1,97 @@
 {% extends 'base.html' %}
-{% block title %}{{ book.title }} — Biblioteca{% endblock %}
+{% block title %}{{ service.name }} — {{ config.salon_name }}{% endblock %}
 {% block content %}
-<nav aria-label="breadcrumb" class="mb-3">
-  <ol class="breadcrumb">
-    <li class="breadcrumb-item"><a href="{% url 'books:list' %}">Acervo</a></li>
-    <li class="breadcrumb-item active">{{ book.title|truncatechars:40 }}</li>
-  </ol>
-</nav>
-
-<div class="row g-4">
-  <div class="col-md-3">
-    {% if book.cover_image %}
-    <img src="{{ book.cover_image.url }}" class="img-fluid rounded-3 shadow" alt="{{ book.title }}">
-    {% else %}
-    <div class="book-cover-placeholder rounded-3 shadow" style="height:300px"><i class="bi bi-book"></i></div>
-    {% endif %}
-
-    <div class="card mt-3 p-3">
-      <!-- Rental price & loan info -->
-      <div class="mb-3 text-center">
-        {% if book.rental_price > 0 %}
-        <div class="fs-4 fw-bold text-success">R$ {{ book.rental_price }}</div>
-        <div class="small text-muted">por empréstimo</div>
-        {% else %}
-        <div class="fs-5 fw-bold text-success"><i class="bi bi-gift me-1"></i>Empréstimo Gratuito</div>
-        {% endif %}
-        {% if config %}
-        <div class="small text-muted mt-1">
-          <i class="bi bi-calendar-range me-1"></i>Prazo: {{ config.max_loan_days }} dias
-          <br><i class="bi bi-exclamation-circle me-1"></i>Multa: R$ {{ config.fine_per_day }}/dia de atraso
+<div class="row justify-content-center">
+  <div class="col-lg-9">
+    <a href="{% url 'books:list' %}" class="btn btn-sm btn-outline-secondary mb-4">
+      <i class="bi bi-arrow-left me-1"></i>Voltar aos Serviços
+    </a>
+    <div class="card overflow-hidden">
+      <div class="row g-0">
+        <div class="col-md-4">
+          {% if service.image %}
+          <img src="{{ service.image.url }}" alt="{{ service.name }}"
+               style="width:100%;height:100%;min-height:260px;object-fit:cover;">
+          {% else %}
+          <div class="service-img-placeholder" style="min-height:260px;border-radius:0;">
+            <i class="bi bi-{% if service.category %}{{ service.category.icon }}{% else %}scissors{% endif %}"
+               style="font-size:5rem;color:var(--salon-primary);opacity:.4;"></i>
+          </div>
+          {% endif %}
         </div>
-        {% endif %}
-      </div>
-      <hr class="my-2">
-      <div class="d-grid gap-2">
-        {% if user.is_authenticated %}
-          {% if user_reservation %}
-          <div class="text-center">
-            <span class="badge
-              {% if user_reservation.status == 'ACTIVE' %}bg-success
-              {% elif user_reservation.status == 'PENDING' %}bg-warning text-dark
-              {% elif user_reservation.status == 'OVERDUE' %}bg-danger
-              {% else %}bg-secondary{% endif %} fs-6 py-2 px-3">
-              <i class="bi bi-bookmark-check me-1"></i>{{ user_reservation.get_status_display }}
+        <div class="col-md-8">
+          <div class="card-body p-4">
+            {% if service.category %}
+            <span class="badge badge-salon mb-2">
+              <i class="bi bi-{{ service.category.icon }} me-1"></i>{{ service.category.name }}
             </span>
-            {% if user_reservation.due_date %}
-            <div class="small text-muted mt-1">
-              Devolução: {{ user_reservation.due_date|date:"d/m/Y" }}
-              {% if user_reservation.is_overdue %}
-              <br><span class="text-danger fw-semibold">{{ user_reservation.overdue_days }} dia(s) em atraso</span>
+            {% endif %}
+            <h2 class="fw-bold mb-2">{{ service.name }}</h2>
+            <p class="text-muted">{{ service.description }}</p>
+            <div class="row g-3 mt-2">
+              <div class="col-6">
+                <div class="p-3 rounded-3 text-center" style="background:var(--salon-light);">
+                  <div class="fw-bold fs-4" style="color:var(--salon-primary)">R$ {{ service.price }}</div>
+                  <div class="small text-muted">Preço</div>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="p-3 rounded-3 text-center" style="background:#f0f9ff;">
+                  <div class="fw-bold fs-4 text-info">{{ service.duration_display }}</div>
+                  <div class="small text-muted">Duração</div>
+                </div>
+              </div>
+            </div>
+            <div class="mt-4 d-flex gap-2">
+              {% if user.is_authenticated %}
+              <a href="{% url 'books:book' service.pk %}" class="btn btn-salon px-4 fw-bold">
+                <i class="bi bi-calendar-plus me-2"></i>Agendar Este Serviço
+              </a>
+              {% else %}
+              <a href="{% url 'accounts:login' %}" class="btn btn-salon px-4 fw-bold">
+                <i class="bi bi-box-arrow-in-right me-2"></i>Entre para Agendar
+              </a>
+              {% endif %}
+              {% if user.is_staff %}
+              <a href="{% url 'books:service_edit' service.pk %}" class="btn btn-outline-secondary">
+                <i class="bi bi-pencil me-1"></i>Editar
+              </a>
               {% endif %}
             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if professionals %}
+    <div class="mt-5">
+      <h4 class="fw-bold mb-3">
+        <i class="bi bi-people me-2" style="color:var(--salon-primary)"></i>Profissionais que realizam este serviço
+      </h4>
+      <div class="row g-3">
+        {% for prof in professionals %}
+        <div class="col-md-4">
+          <div class="card p-3 text-center h-100">
+            {% if prof.photo %}
+            <img src="{{ prof.photo.url }}" alt="{{ prof.full_name }}"
+                 class="rounded-circle mx-auto mb-2"
+                 style="width:72px;height:72px;object-fit:cover;border:3px solid var(--salon-light);">
+            {% else %}
+            <div class="rounded-circle mx-auto mb-2 d-flex align-items-center justify-content-center"
+                 style="width:72px;height:72px;background:var(--salon-light);border:3px solid var(--salon-primary);">
+              <i class="bi bi-person fs-3" style="color:var(--salon-primary)"></i>
+            </div>
+            {% endif %}
+            <div class="fw-semibold">{{ prof.full_name }}</div>
+            {% if prof.bio %}
+            <p class="text-muted small mt-1 mb-0">{{ prof.bio|truncatechars:60 }}</p>
             {% endif %}
           </div>
-          {% elif book.is_available %}
-          <form method="post" action="{% url 'books:reserve' book.pk %}">
-            {% csrf_token %}
-            <button type="submit" class="btn btn-primary w-100">
-              <i class="bi bi-bookmark-plus me-2"></i>
-              {% if book.rental_price > 0 %}Solicitar Empréstimo (R$ {{ book.rental_price }}){% else %}Solicitar Empréstimo{% endif %}
-            </button>
-          </form>
-          {% else %}
-          <button class="btn btn-secondary disabled"><i class="bi bi-x-circle me-2"></i>Indisponível</button>
-          {% endif %}
-        {% else %}
-        <a href="{% url 'accounts:login' %}" class="btn btn-primary"><i class="bi bi-box-arrow-in-right me-2"></i>Login para solicitar</a>
-        {% endif %}
-        {% if user.is_staff %}
-        <a href="{% url 'books:edit' book.pk %}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil me-1"></i>Editar</a>
-        <a href="{% url 'books:delete' book.pk %}" class="btn btn-outline-danger btn-sm"><i class="bi bi-trash me-1"></i>Excluir</a>
-        {% endif %}
-      </div>
-      <hr>
-      <div class="small text-muted">
-        <div class="mb-1"><i class="bi bi-stack me-2"></i><strong>Exemplares:</strong> {{ book.total_copies }}</div>
-        <div><i class="bi bi-check-circle me-2 text-success"></i><strong>Disponíveis:</strong>
-          <span class="{% if book.is_available %}text-success{% else %}text-danger{% endif %} fw-bold">{{ book.available_copies }}</span>
         </div>
+        {% endfor %}
       </div>
-    </div>
-  </div>
-
-  <div class="col-md-9">
-    <div class="d-flex justify-content-between align-items-start">
-      <div>
-        <h1 class="fw-bold">{{ book.title }}</h1>
-        <p class="text-muted fs-5">{{ book.author }}</p>
-      </div>
-      {% if book.average_rating %}
-      <div class="text-end">
-        <div class="fs-4 fw-bold" style="color:var(--lib-accent)">{{ book.average_rating }}/5</div>
-        <div>
-          {% for i in star_range %}
-          <i class="bi bi-star{% if i <= book.average_rating %}-fill{% endif %} star"></i>
-          {% endfor %}
-        </div>
-        <small class="text-muted">{{ book.rating_count }} avaliação(ões)</small>
-      </div>
-      {% endif %}
-    </div>
-
-    <div class="mb-3">
-      {% for cat in book.categories.all %}<span class="badge bg-light text-secondary me-1">{{ cat.name }}</span>{% endfor %}
-    </div>
-
-    <div class="row text-muted small mb-3 g-2">
-      {% if book.publisher %}<div class="col-auto"><i class="bi bi-building me-1"></i>{{ book.publisher }}</div>{% endif %}
-      {% if book.year %}<div class="col-auto"><i class="bi bi-calendar me-1"></i>{{ book.year }}</div>{% endif %}
-      {% if book.isbn %}<div class="col-auto"><i class="bi bi-upc me-1"></i>ISBN: {{ book.isbn }}</div>{% endif %}
-    </div>
-
-    <div class="card p-3 mb-4">
-      <h6 class="fw-bold"><i class="bi bi-text-paragraph me-2"></i>Descrição</h6>
-      <p class="mb-0">{{ book.description }}</p>
-    </div>
-
-    {% if user.is_authenticated %}
-    <div class="card p-3 mb-4">
-      <h6 class="fw-bold mb-3"><i class="bi bi-star me-2"></i>Sua Avaliação</h6>
-      <form method="post" action="{% url 'books:rate' book.pk %}">
-        {% csrf_token %}
-        <div class="d-flex gap-2 align-items-center">
-          {% for i in star_range %}
-          <div class="form-check form-check-inline">
-            <input class="form-check-input visually-hidden" type="radio" name="score" value="{{ i }}"
-                   id="star{{ i }}" {% if user_rating and user_rating.score == i %}checked{% endif %}>
-            <label class="form-check-label fs-4 star-label" for="star{{ i }}" style="cursor:pointer;color:#dee2e6">
-              <i class="bi bi-star-fill"></i>
-            </label>
-          </div>
-          {% endfor %}
-          <button type="submit" class="btn btn-sm btn-outline-primary ms-2">
-            {% if user_rating %}Atualizar{% else %}Avaliar{% endif %}
-          </button>
-          {% if user_rating %}<small class="text-muted">Sua nota atual: {{ user_rating.score }}/5</small>{% endif %}
-        </div>
-      </form>
     </div>
     {% endif %}
-
-    <div class="card p-3">
-      <h6 class="fw-bold mb-3"><i class="bi bi-chat-dots me-2"></i>Comentários ({{ book.comments.count }})</h6>
-      {% if user.is_authenticated %}
-      <form method="post" action="{% url 'books:comment' book.pk %}" class="mb-4">
-        {% csrf_token %}
-        <div class="input-group">
-          <textarea name="content" class="form-control" rows="2" placeholder="Escreva seu comentário..." required></textarea>
-          <button type="submit" class="btn btn-primary"><i class="bi bi-send"></i></button>
-        </div>
-      </form>
-      {% endif %}
-      {% for comment in book.comments.all %}
-      {% if comment.is_visible %}
-      <div class="border-bottom pb-3 mb-3">
-        <div class="d-flex justify-content-between">
-          <strong><i class="bi bi-person-circle me-1"></i>{{ comment.user.get_full_name|default:comment.user.username }}</strong>
-          <small class="text-muted">{{ comment.created_at|date:"d/m/Y H:i" }}</small>
-        </div>
-        <p class="mb-0 mt-1">{{ comment.content }}</p>
-      </div>
-      {% endif %}
-      {% empty %}
-      <p class="text-muted text-center py-2">Nenhum comentário ainda. Seja o primeiro!</p>
-      {% endfor %}
-    </div>
   </div>
 </div>
-{% endblock %}
-{% block extra_js %}
-<script>
-const labels = document.querySelectorAll('.star-label');
-const inputs = document.querySelectorAll('input[name="score"]');
-function updateStars(val) {
-  labels.forEach((l, i) => {
-    l.style.color = i < val ? '#ffc107' : '#dee2e6';
-  });
-}
-const checked = document.querySelector('input[name="score"]:checked');
-if (checked) updateStars(parseInt(checked.value));
-inputs.forEach((inp, idx) => {
-  inp.addEventListener('change', () => updateStars(idx + 1));
-});
-labels.forEach((l, idx) => {
-  l.addEventListener('mouseover', () => updateStars(idx + 1));
-  l.addEventListener('mouseout', () => {
-    const c = document.querySelector('input[name="score"]:checked');
-    updateStars(c ? parseInt(c.value) : 0);
-  });
-});
-</script>
 {% endblock %}

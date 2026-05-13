@@ -1,55 +1,41 @@
 {% extends 'base.html' %}
-{% block title %}Logs de Ações — Biblioteca{% endblock %}
+{% block title %}Logs de Ações — Salão de Beleza{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-  <h2 class="fw-bold"><i class="bi bi-journal-text me-2"></i>Logs de Ações</h2>
-  <span class="badge bg-secondary fs-6">{{ logs|length }} registros</span>
+  <h2 class="fw-bold"><i class="bi bi-journal-text me-2" style="color:var(--salon-primary)"></i>Logs de Ações</h2>
+  <span class="badge" style="background:var(--salon-primary)">Últimas 200 ações</span>
 </div>
-<div class="card">
-  <div class="table-responsive">
-    <table class="table table-sm table-hover align-middle mb-0">
-      <thead style="background:var(--lib-primary);color:#fff;">
-        <tr>
-          <th>Data/Hora</th>
-          <th>Usuário</th>
-          <th>Ação</th>
-          <th>Descrição</th>
-          <th>IP</th>
-          <th>Caminho</th>
-          <th>Método</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for log in logs %}
-        <tr>
-          <td><small>{{ log.timestamp|date:"d/m/Y H:i:s" }}</small></td>
-          <td>
-            {% if log.user %}
-              <strong>{{ log.user.username }}</strong>
-              {% if log.user.is_staff %}<span class="badge bg-warning text-dark ms-1">admin</span>{% endif %}
-            {% else %}<span class="text-muted">Anônimo</span>{% endif %}
-          </td>
-          <td>
-            <span class="badge 
-              {% if log.action == 'LOGIN' %}bg-success
-              {% elif log.action == 'LOGOUT' %}bg-secondary
-              {% elif log.action == 'REGISTER' %}bg-primary
-              {% elif 'DELETE' in log.action %}bg-danger
-              {% elif 'UPDATE' in log.action or 'EDIT' in log.action %}bg-warning text-dark
-              {% else %}bg-info text-dark{% endif %}">
-              {{ log.get_action_display }}
-            </span>
-          </td>
-          <td><small>{{ log.description|truncatechars:60 }}</small></td>
-          <td><small class="text-muted">{{ log.ip_address|default:"—" }}</small></td>
-          <td><small class="text-muted">{{ log.path|truncatechars:40 }}</small></td>
-          <td><small>{{ log.method }}</small></td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="7" class="text-center text-muted py-4">Nenhum log encontrado.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
+<div class="card p-0 overflow-hidden">
+  <table class="table table-hover mb-0 table-sm">
+    <thead style="background:var(--salon-light);">
+      <tr>
+        <th>Data/Hora</th>
+        <th>Usuário</th>
+        <th>Ação</th>
+        <th>Descrição</th>
+        <th>IP</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in logs %}
+      <tr>
+        <td class="small text-muted text-nowrap">{{ log.timestamp|date:"d/m/Y H:i" }}</td>
+        <td class="small fw-semibold">{{ log.user.username|default:"—" }}</td>
+        <td>
+          <span class="badge
+            {% if log.action == 'LOGIN' %}bg-success
+            {% elif log.action == 'LOGOUT' %}bg-secondary
+            {% elif log.action == 'REGISTER' %}bg-primary
+            {% else %}bg-info text-dark{% endif %}
+            small">{{ log.get_action_display }}</span>
+        </td>
+        <td class="small">{{ log.description|truncatechars:80 }}</td>
+        <td class="small text-muted">{{ log.ip_address|default:"—" }}</td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="5" class="text-center text-muted py-4">Nenhum log registrado.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 {% endblock %}
