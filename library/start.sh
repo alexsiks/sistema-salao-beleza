@@ -4,12 +4,18 @@ cd "$(dirname "$0")"
 
 echo "=== Iniciando Sistema de Agendamento de Salão ==="
 
+# Use the project Python (3.11 with all dependencies installed)
+PYTHON="${PYTHONLIBS_HOME:-/home/runner/workspace/.pythonlibs}/bin/python"
+if [ ! -f "$PYTHON" ]; then
+    PYTHON="python"
+fi
+
 # Run migrations
-python manage.py makemigrations --verbosity=0 2>/dev/null || true
-python manage.py migrate --verbosity=0
+$PYTHON manage.py makemigrations --verbosity=0 2>/dev/null || true
+$PYTHON manage.py migrate --verbosity=0
 
 # Create superuser if not exists
-python -c "
+$PYTHON -c "
 import django, os
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'biblioteca.settings')
 django.setup()
@@ -20,7 +26,7 @@ if not User.objects.filter(username='admin').exists():
 "
 
 # Seed salon data
-python -c "
+$PYTHON -c "
 import django, os
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'biblioteca.settings')
 django.setup()
@@ -132,4 +138,4 @@ mkdir -p media/servicos media/profissionais
 
 echo "=== Iniciando servidor na porta 5000 ==="
 PORT=${PORT:-5000}
-exec python manage.py runserver 0.0.0.0:$PORT
+exec $PYTHON manage.py runserver 0.0.0.0:$PORT
