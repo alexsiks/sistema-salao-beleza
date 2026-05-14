@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+{% block title %}Meu Token API — {{ config.salon_name }}{% endblock %}
+{% block content %}
+
+{% if messages %}
+  {% for msg in messages %}
+  <div class="mb-4 px-4 py-3 rounded-xl text-sm font-medium
+    {% if msg.tags == 'success' %}bg-green-100 text-green-800 border border-green-200
+    {% elif msg.tags == 'error' %}bg-red-100 text-red-800 border border-red-200
+    {% else %}bg-blue-100 text-blue-800 border border-blue-200{% endif %}">
+    {{ msg }}
+  </div>
+  {% endfor %}
+{% endif %}
+
+<div class="max-w-3xl mx-auto space-y-6">
+
+  <!-- Header -->
+  <div class="flex items-center gap-3">
+    <div class="bg-primary-light rounded-xl p-2.5">
+      <i class="bi bi-key text-primary text-xl"></i>
+    </div>
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Token de API</h1>
+      <p class="text-gray-500 text-sm">Use este token para autenticar chamadas à API REST.</p>
+    </div>
+  </div>
+
+  <!-- Token Card -->
+  <div class="bg-white rounded-2xl shadow-sm p-6 border border-pink-100">
+    <div class="flex items-center justify-between mb-3">
+      <label class="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+        <i class="bi bi-shield-lock text-primary"></i> Seu Token
+      </label>
+      <span class="text-xs text-gray-400">Gerado para: <strong>{{ request.user.username }}</strong></span>
+    </div>
+
+    <div x-data="{ visible: false }" class="space-y-3">
+      <!-- Token display -->
+      <div class="relative flex items-center gap-2">
+        <input
+          :type="visible ? 'text' : 'password'"
+          value="{{ token.key }}"
+          readonly
+          class="w-full font-mono text-sm bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 pr-24 focus:outline-none focus:border-primary text-gray-800"
+          id="token-input"
+        >
+        <div class="absolute right-2 flex items-center gap-1">
+          <button @click="visible = !visible"
+            class="text-gray-400 hover:text-primary px-1.5 py-1 rounded transition"
+            :title="visible ? 'Ocultar' : 'Mostrar'">
+            <i :class="visible ? 'bi bi-eye-slash' : 'bi bi-eye'"></i>
+          </button>
+          <button
+            onclick="navigator.clipboard.writeText(document.getElementById('token-input').value).then(()=>{this.innerHTML='<i class=\'bi bi-check text-green-600\'></i>';setTimeout(()=>{this.innerHTML='<i class=\'bi bi-clipboard\'></i>'},1500)})"
+            class="text-gray-400 hover:text-primary px-1.5 py-1 rounded transition"
+            title="Copiar">
+            <i class="bi bi-clipboard"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Copy full header -->
+      <div class="relative flex items-center gap-2">
+        <input
+          type="text"
+          value="Authorization: Token {{ token.key }}"
+          readonly
+          class="w-full font-mono text-xs bg-gray-900 text-green-400 border border-gray-700 rounded-lg px-4 py-2.5 pr-10 focus:outline-none"
+          id="header-input"
+        >
+        <button
+          onclick="navigator.clipboard.writeText(document.getElementById('header-input').value).then(()=>{this.innerHTML='<i class=\'bi bi-check text-green-400\'></i>';setTimeout(()=>{this.innerHTML='<i class=\'bi bi-clipboard text-gray-400\'></i>'},1500)})"
+          class="absolute right-2 text-gray-400 hover:text-green-400 px-1 py-1 rounded transition"
+          title="Copiar header">
+          <i class="bi bi-clipboard"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Regenerate -->
+    <div class="mt-5 pt-4 border-t border-gray-100 flex items-center justify-between">
+      <p class="text-xs text-gray-400 flex items-center gap-1">
+        <i class="bi bi-info-circle"></i>
+        Ao regenerar, o token anterior deixará de funcionar imediatamente.
+      </p>
+      <form method="post" onsubmit="return confirm('Deseja regenerar o token? O atual será invalidado.')">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="regenerate">
+        <button type="submit"
+          class="flex items-center gap-1.5 text-sm bg-primary hover:bg-primary-dark text-white font-medium px-4 py-2 rounded-lg transition">
+          <i class="bi bi-arrow-repeat"></i> Regenerar Token
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Usage example -->
+  <div class="bg-white rounded-2xl shadow-sm p-6 border border-pink-100">
+    <h2 class="font-semibold text-gray-800 flex items-center gap-2 mb-4">
+      <i class="bi bi-code-slash text-primary"></i> Como usar
+    </h2>
+    <div class="space-y-3 text-sm">
+      <p class="text-gray-500">Inclua o header em todas as requisições autenticadas:</p>
+      <div class="code-block">curl -H "Authorization: Token {{ token.key }}" \
+     {{ host }}/api/analytics/services/</div>
+      <p class="text-gray-500 mt-2">Ou usando Python:</p>
+      <div class="code-block">import requests
+
+headers = {"Authorization": "Token {{ token.key }}"}
+resp = requests.get("{{ host }}/api/analytics/services/", headers=headers)
+print(resp.json())</div>
+    </div>
+  </div>
+
+  <!-- Available endpoints -->
+  <div class="bg-white rounded-2xl shadow-sm p-6 border border-pink-100">
+    <h2 class="font-semibold text-gray-800 flex items-center gap-2 mb-4">
+      <i class="bi bi-lightning-charge text-accent"></i> Endpoints disponíveis para você
+    </h2>
+    <div class="space-y-2">
+      {% for ep in endpoints %}
+      <div class="flex items-start gap-3 p-3 rounded-xl bg-gray-50 hover:bg-pink-50 transition group">
+        <div class="mt-0.5">
+          <span class="inline-block text-xs font-bold bg-green-100 text-green-700 rounded px-1.5 py-0.5">GET</span>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="font-mono text-sm text-primary break-all">{{ host }}{{ ep.path }}</div>
+          <div class="text-xs text-gray-500 mt-0.5">{{ ep.desc }}</div>
+        </div>
+        <button
+          onclick="navigator.clipboard.writeText('{{ host }}{{ ep.path }}')"
+          class="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-primary transition px-1"
+          title="Copiar URL">
+          <i class="bi bi-clipboard text-xs"></i>
+        </button>
+      </div>
+      {% endfor %}
+    </div>
+    <p class="mt-4 text-xs text-gray-400 flex items-center gap-1">
+      <i class="bi bi-info-circle"></i>
+      Para ver a documentação completa da API acesse
+      <a href="{% url 'api_docs' %}" class="text-primary hover:underline ml-0.5">API Docs</a>.
+    </p>
+  </div>
+
+</div>
+{% endblock %}
