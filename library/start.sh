@@ -17,7 +17,7 @@ $PYTHON manage.py migrate --verbosity=0
 # Create superuser if not exists
 $PYTHON -c "
 import django, os
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'biblioteca.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'salao.settings')
 django.setup()
 from django.contrib.auth.models import User
 if not User.objects.filter(username='admin').exists():
@@ -28,9 +28,9 @@ if not User.objects.filter(username='admin').exists():
 # Seed salon data
 $PYTHON -c "
 import django, os
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'biblioteca.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'salao.settings')
 django.setup()
-from books.models import SalonConfig, ServiceCategory, Service, Professional
+from servicos.models import SalonConfig, ServiceCategory, Service, Professional
 from django.contrib.auth.models import User
 
 # Singleton config

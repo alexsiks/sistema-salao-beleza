@@ -24,13 +24,13 @@ Sistema web completo de agendamento de salão de beleza com Django, SQLite e API
 
 ```
 library/
-├── biblioteca/        # Configurações Django (settings, urls, wsgi)
+├── salao/        # Configurações Django (settings, urls, wsgi)
 ├── accounts/          # App de usuários (modelos, views, API, serializers)
 │   ├── models.py      # UserProfile, ActionLog
 │   ├── views.py       # Login, Register, Profile, CEP lookup
 │   ├── api_views.py   # API endpoints de autenticação e usuários
 │   └── middleware.py  # Registro automático de ações
-├── books/             # App principal do salão (modelos, views, API)
+├── servicos/             # App principal do salão (modelos, views, API)
 │   ├── models.py      # SalonConfig, ServiceCategory, Service, Professional, Appointment
 │   ├── views.py       # Catálogo, agendamento, agenda admin, configurações
 │   ├── api_views.py   # API endpoints de serviços e agendamentos
@@ -44,11 +44,11 @@ library/
 
 ## Fluxo de Agendamento
 
-1. Cliente acessa `/books/` — vê catálogo de serviços com foto, preço e duração
+1. Cliente acessa `/servicos/` — vê catálogo de serviços com foto, preço e duração
 2. Clica em "Agendar" → seleciona profissional (opcional) e data
 3. Sistema carrega horários disponíveis via AJAX
 4. Cliente escolhe horário e confirma → status inicial: **PENDENTE**
-5. Admin confirma em `/books/agendamentos/` → status: **CONFIRMADO**
+5. Admin confirma em `/servicos/agendamentos/` → status: **CONFIRMADO**
 6. Após atendimento, admin marca como **CONCLUÍDO**
 
 ## Modelos Principais
@@ -94,7 +94,7 @@ library/
 - Sempre rodar `start.sh` a partir da raiz do workspace (`bash library/start.sh`)
 - O script aplica migrations e cria dados de seed automaticamente
 - Horários disponíveis são calculados em tempo real via AJAX no momento do agendamento
-- SalonConfig é singleton (pk=1) — configurar em `/books/configuracoes/`
+- SalonConfig é singleton (pk=1) — configurar em `/servicos/configuracoes/`
 
 ## Serviços de Demo (criados pelo seed)
 

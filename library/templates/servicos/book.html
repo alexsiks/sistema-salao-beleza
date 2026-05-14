@@ -1,0 +1,186 @@
+{% extends 'base.html' %}
+{% block title %}Agendar {{ service.name }} — {{ config.salon_name }}{% endblock %}
+{% block content %}
+<div class="flex justify-center">
+  <div class="w-full max-w-2xl">
+    <a href="{% url 'servicos:detail' service.pk %}" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary mb-5 transition">
+      <i class="bi bi-arrow-left"></i> Voltar
+    </a>
+
+    <div class="flex items-center gap-4 mb-6">
+      <div class="p-3 rounded-xl bg-pink-100">
+        <i class="bi bi-calendar-plus text-primary text-2xl"></i>
+      </div>
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800">Agendar Serviço</h2>
+        <p class="text-gray-500 text-sm">{{ service.name }} · {{ service.duration_display }} · R$ {{ service.price }}</p>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm p-6 space-y-6">
+      <form method="post" id="bookingForm">
+        {% csrf_token %}
+
+        <!-- Profissional -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            <i class="bi bi-person text-primary mr-1"></i> Profissional
+          </label>
+          <select name="professional" id="professionalSelect"
+                  class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary">
+            <option value="">Sem preferência (qualquer profissional)</option>
+            {% for prof in professionals %}
+            <option value="{{ prof.pk }}">{{ prof.full_name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Data -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            <i class="bi bi-calendar3 text-primary mr-1"></i> Data
+          </label>
+          <input type="date" name="date" id="dateInput"
+                 min="{{ min_date }}" max="{{ max_date }}" required
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary">
+        </div>
+
+        <!-- Horários -->
+        <div id="slotsSection" style="display:none;">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            <i class="bi bi-clock text-primary mr-1"></i> Horário
+          </label>
+          <input type="hidden" name="start_time" id="selectedTime">
+          <div id="slotsContainer" class="flex flex-wrap gap-2 mt-1"></div>
+          <div id="noSlots" class="bg-yellow-50 border border-yellow-200 text-yellow-700 rounded-lg px-4 py-3 text-sm mt-2" style="display:none;">
+            <i class="bi bi-exclamation-triangle mr-2"></i>
+            Nenhum horário disponível para esta data. Tente outro dia.
+          </div>
+          <div id="loadingSlots" class="text-gray-400 text-sm mt-2" style="display:none;">
+            <i class="bi bi-arrow-clockwise mr-1"></i> Carregando horários...
+          </div>
+        </div>
+
+        <!-- Observações -->
+        <div id="notesSection" style="display:none;">
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            <i class="bi bi-chat text-primary mr-1"></i> Observações <span class="text-gray-400 font-normal">(opcional)</span>
+          </label>
+          <textarea name="notes" rows="3"
+                    placeholder="Ex: cabelo muito longo, alergia a produtos com amônia..."
+                    class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary resize-none"></textarea>
+        </div>
+
+        <!-- Resumo -->
+        <div id="confirmSection" style="display:none;">
+          <div class="bg-pink-50 rounded-xl p-4 mb-4">
+            <h6 class="font-bold text-gray-800 mb-3 flex items-center gap-2">
+              <i class="bi bi-check2-circle text-primary"></i> Resumo do Agendamento
+            </h6>
+            <div class="grid grid-cols-2 gap-y-1 text-sm">
+              <div><span class="text-gray-500">Serviço:</span> <strong>{{ service.name }}</strong></div>
+              <div><span class="text-gray-500">Duração:</span> <strong>{{ service.duration_display }}</strong></div>
+              <div><span class="text-gray-500">Valor:</span> <strong>R$ {{ service.price }}</strong></div>
+              <div><span class="text-gray-500">Data:</span> <strong id="summaryDate">—</strong></div>
+              <div><span class="text-gray-500">Horário:</span> <strong id="summaryTime">—</strong></div>
+              <div><span class="text-gray-500">Profissional:</span> <strong id="summaryProf">—</strong></div>
+            </div>
+          </div>
+          <button type="submit" class="w-full bg-primary text-white font-bold py-3 rounded-lg hover:bg-primary-dark transition flex items-center justify-center gap-2" id="submitBtn" disabled>
+            <i class="bi bi-calendar-check"></i> Confirmar Agendamento
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const dateInput = document.getElementById('dateInput');
+const profSelect = document.getElementById('professionalSelect');
+const slotsSection = document.getElementById('slotsSection');
+const slotsContainer = document.getElementById('slotsContainer');
+const noSlots = document.getElementById('noSlots');
+const loadingSlots = document.getElementById('loadingSlots');
+const notesSection = document.getElementById('notesSection');
+const confirmSection = document.getElementById('confirmSection');
+const selectedTimeInput = document.getElementById('selectedTime');
+const submitBtn = document.getElementById('submitBtn');
+const summaryDate = document.getElementById('summaryDate');
+const summaryTime = document.getElementById('summaryTime');
+const summaryProf = document.getElementById('summaryProf');
+
+const profOptions = {};
+{% for prof in professionals %}
+profOptions["{{ prof.pk }}"] = "{{ prof.full_name }}";
+{% endfor %}
+
+function formatDate(d) {
+  const [y, m, day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+
+function loadSlots() {
+  const d = dateInput.value;
+  const profId = profSelect.value;
+  if (!d) { slotsSection.style.display = 'none'; return; }
+
+  slotsSection.style.display = 'block';
+  slotsContainer.innerHTML = '';
+  noSlots.style.display = 'none';
+  loadingSlots.style.display = 'block';
+  selectedTimeInput.value = '';
+  submitBtn.disabled = true;
+  notesSection.style.display = 'none';
+  confirmSection.style.display = 'none';
+
+  const url = `/api/available-slots/?service={{ service.pk }}&date=${d}${profId ? '&professional=' + profId : ''}`;
+  fetch(url)
+    .then(r => r.json())
+    .then(data => {
+      loadingSlots.style.display = 'none';
+      if (data.closed) {
+        noSlots.innerHTML = '<i class="bi bi-calendar-x mr-2"></i>' + (data.message || 'O salão não funciona nesta data.');
+        noSlots.style.display = 'block';
+        return;
+      }
+      if (!data.slots || data.slots.length === 0) {
+        noSlots.innerHTML = '<i class="bi bi-exclamation-triangle mr-2"></i>Nenhum horário disponível para esta data. Tente outro dia.';
+        noSlots.style.display = 'block';
+        return;
+      }
+      data.slots.forEach(slot => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'time-slot-btn border-2 border-primary text-primary bg-white rounded-lg px-3 py-1.5 text-sm font-semibold cursor-pointer hover:bg-primary hover:text-white transition';
+        btn.textContent = slot;
+        btn.addEventListener('click', () => selectSlot(slot, btn));
+        slotsContainer.appendChild(btn);
+      });
+    })
+    .catch(() => {
+      loadingSlots.style.display = 'none';
+      noSlots.style.display = 'block';
+    });
+}
+
+function selectSlot(slot, btn) {
+  document.querySelectorAll('.time-slot-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  selectedTimeInput.value = slot;
+  notesSection.style.display = 'block';
+  confirmSection.style.display = 'block';
+  submitBtn.disabled = false;
+
+  summaryDate.textContent = formatDate(dateInput.value);
+  summaryTime.textContent = slot;
+  const profId = profSelect.value;
+  summaryProf.textContent = profId ? (profOptions[profId] || '—') : 'Qualquer profissional';
+}
+
+dateInput.addEventListener('change', loadSlots);
+profSelect.addEventListener('change', () => { if (dateInput.value) loadSlots(); });
+</script>
+{% endblock %}

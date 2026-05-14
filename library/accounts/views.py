@@ -12,7 +12,7 @@ from .models import ActionLog, UserProfile
 
 def login_view(request):
     if request.user.is_authenticated:
-        return redirect('books:list')
+        return redirect('servicos:list')
     if request.method == 'POST':
         credential = request.POST.get('username', '').strip()
         password = request.POST.get('password', '')
@@ -27,7 +27,7 @@ def login_view(request):
             login(request, user)
             ActionLog.log(user=user, action='LOGIN',
                           description=f'Login bem-sucedido: {user.username}', request=request)
-            return redirect(request.GET.get('next', 'books:list'))
+            return redirect(request.GET.get('next', 'servicos:list'))
         messages.error(request, 'Usuário/e-mail ou senha inválidos.')
     return render(request, 'accounts/login.html')
 
@@ -42,7 +42,7 @@ def logout_view(request):
 
 def register_view(request):
     if request.user.is_authenticated:
-        return redirect('books:list')
+        return redirect('servicos:list')
     form = RegisterForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         user = form.save()
@@ -68,7 +68,7 @@ def register_view(request):
         )
         login(request, user)
         messages.success(request, 'Conta criada com sucesso! Bem-vindo(a)!')
-        return redirect('books:list')
+        return redirect('servicos:list')
     return render(request, 'accounts/register.html', {'form': form})
 
 
@@ -159,7 +159,7 @@ def _do_cep_lookup(request):
 def user_list_view(request):
     if not request.user.is_staff:
         messages.error(request, 'Acesso não autorizado.')
-        return redirect('books:list')
+        return redirect('servicos:list')
     users = User.objects.select_related('profile').order_by('-date_joined')
     return render(request, 'accounts/user_list.html', {'users': users})
 
@@ -168,6 +168,6 @@ def user_list_view(request):
 def action_log_view(request):
     if not request.user.is_staff:
         messages.error(request, 'Acesso não autorizado.')
-        return redirect('books:list')
+        return redirect('servicos:list')
     logs = ActionLog.objects.select_related('user').order_by('-timestamp')[:200]
     return render(request, 'accounts/action_logs.html', {'logs': logs})

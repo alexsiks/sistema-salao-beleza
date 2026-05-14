@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+{% block title %}Configurações — {{ config.salon_name }}{% endblock %}
+{% block content %}
+<div class="flex justify-center">
+  <div class="w-full max-w-2xl space-y-6">
+
+    <div class="flex items-center gap-4">
+      <div class="p-3 rounded-xl bg-pink-100">
+        <i class="bi bi-sliders text-primary text-2xl"></i>
+      </div>
+      <div>
+        <h2 class="text-2xl font-bold text-gray-800">Configurações do Salão</h2>
+        <p class="text-gray-500 text-sm">Horários, funcionamento e datas especiais</p>
+      </div>
+    </div>
+
+    <!-- Main config form -->
+    <div class="bg-white rounded-2xl shadow-sm p-6">
+      <h3 class="font-bold text-gray-700 text-sm uppercase tracking-wide mb-4 flex items-center gap-2">
+        <i class="bi bi-gear text-primary"></i> Informações e Horários
+      </h3>
+      <form method="post" class="space-y-4">
+        {% csrf_token %}
+        <input type="hidden" name="_action" value="config">
+
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Nome do Salão</label>
+          {{ form.salon_name }}
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">Telefone / WhatsApp</label>
+            {{ form.phone }}
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-semibold text-gray-700 mb-1">Endereço</label>
+            {{ form.address }}
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1"><i class="bi bi-sunrise mr-1"></i>Abertura</label>
+            {{ form.open_time }}
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1"><i class="bi bi-sunset mr-1"></i>Fechamento</label>
+            {{ form.close_time }}
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">Intervalo entre horários (min)</label>
+            {{ form.slot_minutes }}
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">Máximo de dias para agendar</label>
+            {{ form.max_advance_days }}
+          </div>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1">Horas mínimas para cancelar</label>
+            {{ form.cancellation_hours }}
+          </div>
+        </div>
+
+        <!-- Working days -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 mb-2">
+            <i class="bi bi-calendar-week mr-1 text-primary"></i>Dias de Funcionamento
+          </label>
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {% for value, label in weekday_choices %}
+            <label class="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg border border-gray-200 hover:border-primary hover:bg-pink-50 transition
+              {% if value|stringformat:'s' in form.working_days_list.value|join:',' %}border-primary bg-pink-50{% endif %}">
+              <input type="checkbox" name="working_days_list" value="{{ value }}"
+                     class="accent-primary"
+                     {% for d in form.working_days_list.value %}{% if d|stringformat:'s' == value|stringformat:'s' %}checked{% endif %}{% endfor %}>
+              <span class="text-sm font-medium text-gray-700">{{ label }}</span>
+            </label>
+            {% endfor %}
+          </div>
+          {% if form.working_days_list.errors %}
+          <p class="text-red-500 text-xs mt-1">{{ form.working_days_list.errors }}</p>
+          {% endif %}
+        </div>
+
+        {% for field in form %}
+        {% if field.errors and field.name != 'working_days_list' %}
+        <div class="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">{{ field.label }}: {{ field.errors }}</div>
+        {% endif %}
+        {% endfor %}
+
+        <div class="flex gap-3 pt-2">
+          <button type="submit" class="bg-primary text-white font-semibold px-6 py-2.5 rounded-lg hover:bg-primary-dark transition flex items-center gap-2">
+            <i class="bi bi-save"></i> Salvar Configurações
+          </button>
+          <a href="{% url 'servicos:list' %}" class="border border-gray-300 text-gray-600 font-semibold px-6 py-2.5 rounded-lg hover:bg-gray-50 transition">Cancelar</a>
+        </div>
+      </form>
+    </div>
+
+    <!-- Closed dates -->
+    <div class="bg-white rounded-2xl shadow-sm p-6">
+      <h3 class="font-bold text-gray-700 text-sm uppercase tracking-wide mb-4 flex items-center gap-2">
+        <i class="bi bi-calendar-x text-primary"></i> Datas Fechadas
+        <span class="text-xs font-normal text-gray-400 normal-case ml-1">feriados, recessos ou qualquer dia em que o salão não atende</span>
+      </h3>
+
+      <!-- Add closed date -->
+      <form method="post" class="flex flex-wrap gap-3 items-end mb-5">
+        {% csrf_token %}
+        <input type="hidden" name="_action" value="add_closed">
+        <div class="flex-1 min-w-[160px]">
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Data</label>
+          <input type="date" name="date"
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary"
+                 required>
+        </div>
+        <div class="flex-[2] min-w-[200px]">
+          <label class="block text-sm font-semibold text-gray-700 mb-1">Motivo (opcional)</label>
+          <input type="text" name="description" placeholder="Ex: Feriado Nacional, Recesso..."
+                 class="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary">
+        </div>
+        <button type="submit" class="bg-primary text-white font-semibold px-4 py-2.5 rounded-lg hover:bg-primary-dark transition text-sm flex items-center gap-2 whitespace-nowrap">
+          <i class="bi bi-plus-circle"></i> Adicionar Data
+        </button>
+      </form>
+
+      <!-- List of closed dates -->
+      {% if closed_dates %}
+      <div class="space-y-2">
+        {% for cd in closed_dates %}
+        <div class="flex items-center justify-between gap-3 px-4 py-3 bg-gray-50 rounded-xl border border-gray-100">
+          <div class="flex items-center gap-3">
+            <div class="text-sm font-bold text-gray-800 whitespace-nowrap">
+              <i class="bi bi-calendar-x text-red-400 mr-1"></i>{{ cd.date|date:"d/m/Y" }}
+              <span class="text-xs font-normal text-gray-400 ml-1">({{ cd.date|date:"l" }})</span>
+            </div>
+            {% if cd.description %}
+            <span class="text-sm text-gray-500">— {{ cd.description }}</span>
+            {% endif %}
+          </div>
+          <form method="post">
+            {% csrf_token %}
+            <input type="hidden" name="_action" value="delete_closed">
+            <input type="hidden" name="closed_date_id" value="{{ cd.pk }}">
+            <button type="submit"
+                    onclick="return confirm('Remover esta data fechada?')"
+                    class="text-red-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition text-sm">
+              <i class="bi bi-trash"></i>
+            </button>
+          </form>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-center py-6 text-gray-400 text-sm">
+        <i class="bi bi-calendar-check text-gray-300 text-3xl block mb-2"></i>
+        Nenhuma data fechada cadastrada. O salão funciona em todos os dias marcados acima.
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

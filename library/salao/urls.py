@@ -1,0 +1,17 @@
+from django.contrib import admin
+from django.urls import path, include
+from django.conf import settings
+from django.conf.urls.static import static
+from django.views.generic import RedirectView
+from accounts.api_views import ApiDocsView
+
+urlpatterns = [
+    path('admin/',    admin.site.urls),
+    path('accounts/', include('accounts.urls')),
+    path('',          include('servicos.urls')),
+    path('api/',      include('accounts.api_urls')),
+    path('api/',      include('servicos.api_urls')),
+    path('api/',      include('servicos.analytics_urls')),
+    path('api/docs/', ApiDocsView.as_view(), name='api_docs'),
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT) \
+  + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

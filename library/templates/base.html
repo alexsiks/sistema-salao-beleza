@@ -42,7 +42,7 @@
 <!-- Navbar -->
 <nav class="bg-gradient-to-r from-primary-dark to-primary shadow-md" x-data="{ open: false }">
   <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
-    <a href="{% url 'books:list' %}" class="text-white font-bold text-lg flex items-center gap-2">
+    <a href="{% url 'servicos:list' %}" class="text-white font-bold text-lg flex items-center gap-2">
       <i class="bi bi-scissors"></i>
       {% if config %}{{ config.salon_name }}{% else %}Salão de Beleza{% endif %}
     </a>
@@ -54,14 +54,14 @@
 
     <!-- Desktop nav -->
     <div class="hidden md:flex items-center gap-6">
-      <a href="{% url 'books:list' %}" class="text-white hover:text-pink-200 text-sm flex items-center gap-1">
+      <a href="{% url 'servicos:list' %}" class="text-white hover:text-pink-200 text-sm flex items-center gap-1">
         <i class="bi bi-grid"></i> Serviços
       </a>
       <a href="{% url 'api_docs' %}" class="text-accent font-semibold hover:text-yellow-300 text-sm flex items-center gap-1">
         <i class="bi bi-lightning-charge"></i> API
       </a>
       {% if user.is_authenticated %}
-      <a href="{% url 'books:my_appointments' %}" class="text-white hover:text-pink-200 text-sm flex items-center gap-1">
+      <a href="{% url 'servicos:my_appointments' %}" class="text-white hover:text-pink-200 text-sm flex items-center gap-1">
         <i class="bi bi-calendar-check"></i> Meus Agendamentos
       </a>
       {% if user.is_staff %}
@@ -72,19 +72,19 @@
         </button>
         <div x-show="adminOpen" x-cloak x-transition
              class="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-gray-100 py-1 z-50">
-          <a href="{% url 'books:service_create' %}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-pink-50 hover:text-primary">
+          <a href="{% url 'servicos:service_create' %}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-pink-50 hover:text-primary">
             <i class="bi bi-plus-circle"></i> Novo Serviço
           </a>
-          <a href="{% url 'books:dashboard' %}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-pink-50 hover:text-primary">
+          <a href="{% url 'servicos:dashboard' %}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-pink-50 hover:text-primary">
             <i class="bi bi-speedometer2"></i> Painel 24h
           </a>
-          <a href="{% url 'books:all_appointments' %}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-pink-50 hover:text-primary">
+          <a href="{% url 'servicos:all_appointments' %}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-pink-50 hover:text-primary">
             <i class="bi bi-calendar3"></i> Agenda do Dia
           </a>
-          <a href="{% url 'books:professionals' %}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-pink-50 hover:text-primary">
+          <a href="{% url 'servicos:professionals' %}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-pink-50 hover:text-primary">
             <i class="bi bi-people"></i> Profissionais
           </a>
-          <a href="{% url 'books:salon_config' %}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-pink-50 hover:text-primary">
+          <a href="{% url 'servicos:salon_config' %}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-pink-50 hover:text-primary">
             <i class="bi bi-sliders"></i> Configurações
           </a>
           <a href="{% url 'accounts:user_list' %}" class="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-pink-50 hover:text-primary">
@@ -136,13 +136,13 @@
 
   <!-- Mobile menu -->
   <div x-show="open" x-cloak x-transition class="md:hidden px-4 pb-4 flex flex-col gap-3">
-    <a href="{% url 'books:list' %}" class="text-white text-sm flex items-center gap-2"><i class="bi bi-grid"></i> Serviços</a>
+    <a href="{% url 'servicos:list' %}" class="text-white text-sm flex items-center gap-2"><i class="bi bi-grid"></i> Serviços</a>
     <a href="{% url 'api_docs' %}" class="text-accent font-semibold text-sm flex items-center gap-2"><i class="bi bi-lightning-charge"></i> API</a>
     {% if user.is_authenticated %}
-    <a href="{% url 'books:my_appointments' %}" class="text-white text-sm flex items-center gap-2"><i class="bi bi-calendar-check"></i> Meus Agendamentos</a>
+    <a href="{% url 'servicos:my_appointments' %}" class="text-white text-sm flex items-center gap-2"><i class="bi bi-calendar-check"></i> Meus Agendamentos</a>
     {% if user.is_staff %}
-    <a href="{% url 'books:service_create' %}" class="text-white text-sm flex items-center gap-2"><i class="bi bi-plus-circle"></i> Novo Serviço</a>
-    <a href="{% url 'books:all_appointments' %}" class="text-white text-sm flex items-center gap-2"><i class="bi bi-calendar3"></i> Agenda</a>
+    <a href="{% url 'servicos:service_create' %}" class="text-white text-sm flex items-center gap-2"><i class="bi bi-plus-circle"></i> Novo Serviço</a>
+    <a href="{% url 'servicos:all_appointments' %}" class="text-white text-sm flex items-center gap-2"><i class="bi bi-calendar3"></i> Agenda</a>
     <a href="{% url 'accounts:user_list' %}" class="text-white text-sm flex items-center gap-2"><i class="bi bi-people"></i> Clientes</a>
     {% endif %}
     <a href="{% url 'accounts:profile' %}" class="text-white text-sm flex items-center gap-2"><i class="bi bi-person"></i> Perfil</a>

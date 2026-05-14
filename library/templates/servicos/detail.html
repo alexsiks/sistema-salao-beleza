@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}{{ service.name }} — {{ config.salon_name }}{% endblock %}
+{% block content %}
+<div class="flex justify-center">
+  <div class="w-full max-w-3xl">
+    <a href="{% url 'servicos:list' %}" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-primary mb-5 transition">
+      <i class="bi bi-arrow-left"></i> Voltar aos Serviços
+    </a>
+
+    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+      <div class="md:flex">
+        <div class="md:w-2/5">
+          {% if service.image %}
+          <img src="{{ service.image.url }}" alt="{{ service.name }}" class="w-full h-full object-cover min-h-64">
+          {% else %}
+          <div class="w-full min-h-64 bg-gradient-to-br from-pink-100 to-pink-200 flex items-center justify-center">
+            <i class="bi bi-{% if service.category %}{{ service.category.icon }}{% else %}scissors{% endif %} text-primary opacity-40" style="font-size:5rem;"></i>
+          </div>
+          {% endif %}
+        </div>
+        <div class="md:w-3/5 p-6">
+          {% if service.category %}
+          <span class="inline-flex items-center gap-1 text-xs font-semibold bg-pink-100 text-primary px-3 py-1 rounded-full mb-3">
+            <i class="bi bi-{{ service.category.icon }}"></i> {{ service.category.name }}
+          </span>
+          {% endif %}
+          <h2 class="text-2xl font-bold text-gray-800 mb-2">{{ service.name }}</h2>
+          <p class="text-gray-500 text-sm mb-5">{{ service.description }}</p>
+
+          <div class="grid grid-cols-2 gap-3 mb-5">
+            <div class="bg-pink-50 rounded-xl p-3 text-center">
+              <div class="font-bold text-2xl text-primary">R$ {{ service.price }}</div>
+              <div class="text-xs text-gray-500 mt-0.5">Preço</div>
+            </div>
+            <div class="bg-blue-50 rounded-xl p-3 text-center">
+              <div class="font-bold text-2xl text-blue-500">{{ service.duration_display }}</div>
+              <div class="text-xs text-gray-500 mt-0.5">Duração</div>
+            </div>
+          </div>
+
+          <div class="flex gap-3">
+            {% if user.is_authenticated %}
+            <a href="{% url 'servicos:book' service.pk %}" class="bg-primary text-white font-bold px-5 py-2.5 rounded-lg hover:bg-primary-dark transition flex items-center gap-2">
+              <i class="bi bi-calendar-plus"></i> Agendar Este Serviço
+            </a>
+            {% else %}
+            <a href="{% url 'accounts:login' %}" class="bg-primary text-white font-bold px-5 py-2.5 rounded-lg hover:bg-primary-dark transition flex items-center gap-2">
+              <i class="bi bi-box-arrow-in-right"></i> Entre para Agendar
+            </a>
+            {% endif %}
+            {% if user.is_staff %}
+            <a href="{% url 'servicos:service_edit' service.pk %}" class="border border-gray-300 text-gray-600 font-semibold px-4 py-2.5 rounded-lg hover:bg-gray-50 transition flex items-center gap-1 text-sm">
+              <i class="bi bi-pencil"></i> Editar
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% if professionals %}
+    <div class="mt-8">
+      <h4 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
+        <i class="bi bi-people text-primary"></i> Profissionais que realizam este serviço
+      </h4>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {% for prof in professionals %}
+        <div class="bg-white rounded-2xl shadow-sm p-5 text-center">
+          {% if prof.photo %}
+          <img src="{{ prof.photo.url }}" alt="{{ prof.full_name }}"
+               class="w-18 h-18 rounded-full mx-auto mb-3 object-cover border-4 border-pink-100"
+               style="width:72px;height:72px;">
+          {% else %}
+          <div class="w-18 h-18 rounded-full mx-auto mb-3 bg-pink-100 border-4 border-primary flex items-center justify-center"
+               style="width:72px;height:72px;">
+            <i class="bi bi-person text-primary text-2xl"></i>
+          </div>
+          {% endif %}
+          <div class="font-semibold text-gray-800">{{ prof.full_name }}</div>
+          {% if prof.bio %}
+          <p class="text-gray-500 text-xs mt-1">{{ prof.bio|truncatechars:60 }}</p>
+          {% endif %}
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

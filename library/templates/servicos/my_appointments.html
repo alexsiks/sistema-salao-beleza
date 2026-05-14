@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block title %}Meus Agendamentos — {{ config.salon_name }}{% endblock %}
+{% block content %}
+
+<div class="flex items-center justify-between mb-6">
+  <h2 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+    <i class="bi bi-calendar-check text-primary"></i> Meus Agendamentos
+  </h2>
+  <a href="{% url 'servicos:list' %}" class="bg-primary text-white font-semibold px-4 py-2 rounded-lg hover:bg-primary-dark transition text-sm flex items-center gap-2">
+    <i class="bi bi-plus-circle"></i> Novo Agendamento
+  </a>
+</div>
+
+<h5 class="font-semibold text-gray-700 mb-3">Próximos</h5>
+{% if upcoming %}
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+  {% for appt in upcoming %}
+  <div class="bg-white rounded-2xl shadow-sm p-4 status-{{ appt.status|lower }}">
+    <div class="flex items-start justify-between mb-2">
+      <div>
+        <div class="font-bold text-gray-800 text-lg">{{ appt.service.name }}</div>
+        <div class="text-gray-500 text-sm flex items-center gap-1">
+          <i class="bi bi-person"></i>
+          {% if appt.professional %}{{ appt.professional.full_name }}{% else %}A definir{% endif %}
+        </div>
+      </div>
+      <span class="text-xs font-semibold px-2.5 py-1 rounded-full
+        {% if appt.status == 'PENDING' %}bg-yellow-100 text-yellow-700
+        {% elif appt.status == 'CONFIRMED' %}bg-green-100 text-green-700
+        {% else %}bg-gray-100 text-gray-600{% endif %}">
+        {{ appt.get_status_display }}
+      </span>
+    </div>
+    <div class="grid grid-cols-2 gap-1 text-sm text-gray-600 mb-3">
+      <div><i class="bi bi-calendar3 text-primary mr-1"></i>{{ appt.date|date:"d/m/Y (D)" }}</div>
+      <div><i class="bi bi-clock text-primary mr-1"></i>{{ appt.start_time|time:"H:i" }} – {{ appt.end_time|time:"H:i" }}</div>
+      <div><i class="bi bi-tag text-primary mr-1"></i>R$ {{ appt.price_snapshot }}</div>
+      <div><i class="bi bi-hourglass text-primary mr-1"></i>{{ appt.service.duration_display }}</div>
+    </div>
+    {% if appt.notes %}
+    <div class="text-sm text-gray-400 italic mb-3 flex items-start gap-1">
+      <i class="bi bi-chat mt-0.5"></i> {{ appt.notes|truncatechars:80 }}
+    </div>
+    {% endif %}
+    {% if appt.can_cancel %}
+    <form method="post" action="{% url 'servicos:cancel_appointment' appt.pk %}"
+          onsubmit="return confirm('Cancelar este agendamento?')">
+      {% csrf_token %}
+      <button type="submit" class="w-full border border-red-300 text-red-500 text-sm font-semibold py-1.5 rounded-lg hover:bg-red-50 transition flex items-center justify-center gap-1">
+        <i class="bi bi-x-circle"></i> Cancelar Agendamento
+      </button>
+    </form>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-10 mb-8">
+  <i class="bi bi-calendar-x text-gray-300" style="font-size:3.5rem;"></i>
+  <p class="text-gray-400 mt-3">Nenhum agendamento próximo.</p>
+  <a href="{% url 'servicos:list' %}" class="mt-3 inline-block bg-primary text-white font-semibold px-5 py-2 rounded-lg hover:bg-primary-dark transition text-sm">Ver Serviços</a>
+</div>
+{% endif %}
+
+<h5 class="font-semibold text-gray-700 mb-3">Histórico</h5>
+{% if past %}
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+  {% for appt in past %}
+  <div class="bg-white rounded-2xl shadow-sm p-4 status-{{ appt.status|lower }}">
+    <div class="flex items-start justify-between mb-1">
+      <div>
+        <div class="font-semibold text-gray-800">{{ appt.service.name }}</div>
+        <div class="text-xs text-gray-400">{{ appt.date|date:"d/m/Y" }} · {{ appt.start_time|time:"H:i" }}</div>
+      </div>
+      <span class="text-xs font-semibold px-2.5 py-1 rounded-full
+        {% if appt.status == 'COMPLETED' %}bg-green-100 text-green-700
+        {% elif appt.status == 'CANCELLED' %}bg-red-100 text-red-600
+        {% elif appt.status == 'NO_SHOW' %}bg-gray-100 text-gray-500
+        {% else %}bg-blue-100 text-blue-600{% endif %}">
+        {{ appt.get_status_display }}
+      </span>
+    </div>
+    <div class="text-sm text-gray-400">
+      <i class="bi bi-person mr-1"></i>
+      {% if appt.professional %}{{ appt.professional.full_name }}{% else %}—{% endif %}
+      &nbsp;·&nbsp; R$ {{ appt.price_snapshot }}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-6 text-gray-400 text-sm">
+  <i class="bi bi-clock-history mr-1"></i> Nenhum agendamento no histórico.
+</div>
+{% endif %}
+{% endblock %}
